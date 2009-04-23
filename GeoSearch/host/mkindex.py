@@ -1,0 +1,174 @@
+#!/usr/bin/python
+
+import getopt
+import os
+import sys
+
+_KNOWN_OPTIONS = ['wikimapia_dir=',
+                  ]
+
+
+class GeoObject(object):
+  """Single object for geocoding."""
+
+  def __init__(self):
+    self.title = None
+    self.obj_id = None
+    self.latlng = None
+    self.source = None
+
+  def __str__(self):
+    return '%s-%s@%s,%s' % (self.obj_id, self.title, self.latlng[0], self.latlng[1])
+
+  def __repr__(self):
+    return str(self)
+
+
+class Options(object):
+  def __init__(self):
+    pass
+
+
+_OPTIONS = Options()
+
+
+def ParseNames(name_str):
+  names = name_str.split('\x1f')
+
+  if len(names) > 1:
+    def ParseOneName(s):
+      lang = ord(s[0]) - 32
+      title = s[1:]
+      return (lang, title)
+    return map(ParseOneName, names)
+
+  names = []
+  cur_name = ''
+  cur_lang = 0
+  for ch in name_str:
+    if (ord(ch) < 34) and (ch != ' '):
+      names.append((cur_lang, cur_name))
+      cur_name = ''
+      cur_lang = ord(ch) - 32
+    else:
+      cur_name += ch
+  names.append((cur_lang, cur_name))
+  return names
+
+
+def GetTitle(name_str):
+  # ru, en, fr
+  _TRY_LANGS = [1, 0, 2]
+  parsed_names = ParseNames(name_str)
+  names = dict(parsed_names)
+  for lang in _TRY_LANGS:
+    if lang in names:
+      return names[lang]
+  # nothing found - return the first
+  return parsed_names[0][1]
+
+
+def ParseWikimapiaData(data):
+  result = []
+  lines = data.split('\n')
+  count = 0
+  header = lines[0].split('|')
+  base_lng = int(header[3])
+  base_lat = int(header[5])
+  lines = lines[4:]
+  for l in lines:
+    if not l.strip():
+      continue
+    fields = l.split('|')
+
+    try:
+      obj_id = int(fields[0])
+    except ValueError:
+      continue
+    min_lng = int(fields[1]) + base_lng
+    max_lat = int(fields[2]) + base_lat
+    size_lng = int(fields[3])
+    size_lat = int(fields[4])
+    center_lat = max_lat - size_lat / 2.0
+    center_lng = min_lng + size_lng / 2.0
+    
+    geo_object = GeoObject()
+    geo_object.obj_id = obj_id
+    geo_object.title = GetTitle(fields[6])
+    geo_object.latlng = (center_lat * 1e-7, center_lng * 1e-7)
+
+    result.append(geo_object)
+    
+    count += 1
+
+  return result
+
+
+def ReadFile(filename):
+  in_file = open(filename, 'r')
+  content = in_file.read()
+  in_file.close()
+  return content
+
+
+def ReadGeoObjects(wikimapia_root):
+  all_objects = {}
+  for rel_name in os.listdir(wikimapia_root):
+    filename = wikimapia_root + '/' + rel_name
+    wikimapia_data = ReadFile(filename)
+    geo_objects = ParseWikimapiaData(wikimapia_data)
+    for geo_object in geo_objects:
+      geo_object.source = rel_name
+      all_objects[geo_object.obj_id] = geo_object
+  return all_objects.values()
+
+
+def IntToStr(num):
+  result = ''
+  for _ in range(4):
+    char = chr(num & 255)
+    result += char
+    num = num >> 8
+  return result
+
+
+def EntryToStr(lat, lng):
+  lat_int = int(lat * 1e+7)
+  lng_int = int(lng * 1e+7)
+  return IntToStr(lat_int) + IntToStr(lng_int)
+
+
+def WriteIndex(geo_objects, out_file, idx_file):
+  idx_file.write(IntToStr(len(geo_objects)))
+  cnt = 0
+  for geo_object in geo_objects:
+    title = unicode(geo_object.title.lower(), 'utf8').lower().encode('utf8')
+    title = title.replace('\n', ' ')
+    latlng = geo_object.latlng
+    title += '\n'
+    out_file.write(title)
+    idx_file.write(EntryToStr(latlng[0], latlng[1]))
+    print cnt, title
+    cnt += 1
+  idx_file.write(EntryToStr(0, 0))
+
+
+def MakeIndex():
+  geo_objects = ReadGeoObjects(_OPTIONS.wikimapia_dir)
+  out_file = open('string.dat', 'w')
+  idx_file = open('index.dat', 'w')
+  WriteIndex(geo_objects, out_file, idx_file)
+  out_file.close()
+  idx_file.close()
+
+
+def main():
+  opt_list, _ = getopt.gnu_getopt(sys.argv, '', _KNOWN_OPTIONS)
+  opt_dict = dict(opt_list)
+  _OPTIONS.wikimapia_dir = opt_dict['--wikimapia_dir']
+
+  MakeIndex()
+
+
+if __name__ == '__main__':
+  main()
