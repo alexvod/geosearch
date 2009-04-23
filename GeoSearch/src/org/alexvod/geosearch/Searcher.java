@@ -106,16 +106,16 @@ public class Searcher {
     private void loadContent(String stringDataFile) throws IOException {
     	FileInputStream stream = new FileInputStream(stringDataFile);
     	// Read file with UTF-8
-    	InputStreamReader reader = new InputStreamReader(stream,"UTF-8");
+    	InputStreamReader reader = new InputStreamReader(stream, "UTF-8");
     	content = "";
     	StringBuilder builder = new StringBuilder();
-    	// FIXME!!!
-    	builder.ensureCapacity(2300000);
-		char[] inputBuffer = new char[200000];
+    	// NOTE: this must be slightly above real number of characters
+    	// TODO(alexvod): remove this hack
+    	builder.ensureCapacity(1930000);
+		char[] inputBuffer = new char[8192];
 		while (true) {
     		int numChars = reader.read(inputBuffer);
     		if (numChars <= 0) break;
-    		Log.e("s", "read " + numChars + " chars");
     		builder.append(inputBuffer, 0, numChars);
     	}
 		content = builder.toString();
@@ -138,7 +138,7 @@ public class Searcher {
         		lat_vector[entries_read] = readInt(buffer, off);
         		lng_vector[entries_read] = readInt(buffer, off + 4);
         		entries_read++;
-        		if (entries_read % 1000 == 0) {
+        		if (entries_read % 10000 == 0) {
         			Log.e("search", "read " + entries_read + " search entries");
         		}
         	}
