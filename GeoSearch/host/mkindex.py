@@ -4,7 +4,8 @@ import getopt
 import os
 import sys
 
-_KNOWN_OPTIONS = ['wikimapia_dir=', 'bbox='
+_KNOWN_OPTIONS = ['wikimapia_dir=', 'bbox=',
+                  'plain_text_files=',
                   ]
 
 
@@ -116,7 +117,7 @@ def ReadFile(filename):
   return content
 
 
-def ReadGeoObjects(wikimapia_root):
+def ReadWikimapiaObjects(wikimapia_root):
   all_objects = {}
   for rel_name in os.listdir(wikimapia_root):
     filename = wikimapia_root + '/' + rel_name
@@ -156,15 +157,43 @@ def WriteIndex(geo_objects, out_file, idx_file):
     #print cnt, title
     cnt += 1
   idx_file.write(EntryToStr(0, 0))
+  print 'Wrote %d entries' % cnt
 
 
 def MakeIndex():
-  geo_objects = ReadGeoObjects(_OPTIONS.wikimapia_dir)
+  geo_objects = []
+  if _OPTIONS.plain_text_files:
+    plain_text_files = _OPTIONS.plain_text_files.split(',')
+    for text_file in plain_text_files:
+      geo_objects += ReadPlainTextObjects(text_file)
+  if _OPTIONS.wikimapia_dir:
+    geo_objects += ReadWikimapiaObjects(_OPTIONS.wikimapia_dir)
   out_file = open('string.dat', 'w')
   idx_file = open('index.dat', 'w')
   WriteIndex(geo_objects, out_file, idx_file)
   out_file.close()
   idx_file.close()
+
+
+def ReadPlainTextObjects(filename):
+  in_file = open(filename, 'r')
+  result = []
+  for line in in_file:
+    sep = line.rfind('@')
+    assert sep >= 0
+    title = line[0:sep]
+    coords = line[sep+1:].split(',')
+    assert len(coords) == 2
+    latlng = map(float, coords)
+    
+    geo_object = GeoObject()
+    geo_object.obj_id = None
+    geo_object.title = title
+    geo_object.latlng = (latlng[0], latlng[1])
+
+    result.append(geo_object)
+
+  return result
 
 
 def ParseBBox(bbox_str):
@@ -190,6 +219,7 @@ def main():
   opt_list, _ = getopt.gnu_getopt(sys.argv, '', _KNOWN_OPTIONS)
   opt_dict = dict(opt_list)
   _OPTIONS.wikimapia_dir = opt_dict['--wikimapia_dir']
+  _OPTIONS.plain_text_files = opt_dict.get('--plain_text_files', '')
   bbox = opt_dict.get('--bbox', '')
   if bbox:
     ParseBBox(bbox)
