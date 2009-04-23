@@ -4,7 +4,7 @@ import getopt
 import os
 import sys
 
-_KNOWN_OPTIONS = ['wikimapia_dir=',
+_KNOWN_OPTIONS = ['wikimapia_dir=', 'bbox='
                   ]
 
 
@@ -26,7 +26,11 @@ class GeoObject(object):
 
 class Options(object):
   def __init__(self):
-    pass
+    self.wikimapia_dir = None
+    self.min_lat = -1000
+    self.max_lat = +1000
+    self.min_lng = -1000
+    self.max_lng = +1000
 
 
 _OPTIONS = Options()
@@ -91,14 +95,15 @@ def ParseWikimapiaData(data):
     size_lat = int(fields[4])
     center_lat = max_lat - size_lat / 2.0
     center_lng = min_lng + size_lng / 2.0
-    
+
     geo_object = GeoObject()
     geo_object.obj_id = obj_id
     geo_object.title = GetTitle(fields[6])
     geo_object.latlng = (center_lat * 1e-7, center_lng * 1e-7)
 
-    result.append(geo_object)
-    
+    if InsideBBox(geo_object):
+      result.append(geo_object)
+
     count += 1
 
   return result
@@ -148,7 +153,7 @@ def WriteIndex(geo_objects, out_file, idx_file):
     title += '\n'
     out_file.write(title)
     idx_file.write(EntryToStr(latlng[0], latlng[1]))
-    print cnt, title
+    #print cnt, title
     cnt += 1
   idx_file.write(EntryToStr(0, 0))
 
@@ -162,10 +167,32 @@ def MakeIndex():
   idx_file.close()
 
 
+def ParseBBox(bbox_str):
+  coords = bbox_str.split(",")
+  assert len(coords) == 4
+  min_lat, min_lng, max_lat, max_lng = map(float, coords)
+  _OPTIONS.min_lat = min_lat
+  _OPTIONS.min_lng = min_lng
+  _OPTIONS.max_lat = max_lat
+  _OPTIONS.max_lng = max_lng
+
+
+def InsideBBox(geo_object):
+  lat, lng = geo_object.latlng
+  if lat < _OPTIONS.min_lat or lat > _OPTIONS.max_lat:
+    return False
+  if lng < _OPTIONS.min_lng or lng > _OPTIONS.max_lng:
+    return False
+  return True
+
+
 def main():
   opt_list, _ = getopt.gnu_getopt(sys.argv, '', _KNOWN_OPTIONS)
   opt_dict = dict(opt_list)
   _OPTIONS.wikimapia_dir = opt_dict['--wikimapia_dir']
+  bbox = opt_dict.get('--bbox', '')
+  if bbox:
+    ParseBBox(bbox)
 
   MakeIndex()
 
