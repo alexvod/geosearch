@@ -138,25 +138,57 @@ def IntToStr(num):
   return result
 
 
-def EntryToStr(lat, lng):
-  lat_int = int(lat * 1e+7)
-  lng_int = int(lng * 1e+7)
-  return IntToStr(lat_int) + IntToStr(lng_int)
+def Int3ByteToStr(num):
+  assert num >= 0
+  assert num < 2**24
+  result = ''
+  for _ in range(3):
+    char = chr(num & 255)
+    result += char
+    num = num >> 8
+  return result
+
+
+def GetMinLatLng(geo_objects):
+  assert len(geo_objects) > 0
+  min_lat, min_lng = geo_objects[0].latlng
+  for geo_object in geo_objects:
+    lat, lng = geo_object.latlng
+    if lat < min_lat:
+      min_lat = lat
+    if lng < min_lng:
+      min_lng = lng
+
+  return (min_lat, min_lng)
 
 
 def WriteIndex(geo_objects, out_file, idx_file):
   idx_file.write(IntToStr(len(geo_objects)))
+
+  min_lat, min_lng = GetMinLatLng(geo_objects)
+  min_lat_int = int(min_lat * 1e+7)
+  min_lng_int = int(min_lng * 1e+7)
+  idx_file.write(IntToStr(min_lat_int) + IntToStr(min_lng_int))
+  
   cnt = 0
   for geo_object in geo_objects:
     title = unicode(geo_object.title.lower(), 'utf8').lower().encode('utf8')
     title = title.replace('\n', ' ')
-    latlng = geo_object.latlng
     title += '\n'
     out_file.write(title)
-    idx_file.write(EntryToStr(latlng[0], latlng[1]))
     #print cnt, title
     cnt += 1
-  idx_file.write(EntryToStr(0, 0))
+
+  for geo_object in geo_objects:
+    lat, lng = geo_object.latlng
+    lat_int = int((lat - min_lat) * 1e+7)
+    idx_file.write(Int3ByteToStr(lat_int))
+
+  for geo_object in geo_objects:
+    lat, lng = geo_object.latlng
+    lng_int = int((lng - min_lng) * 1e+7)
+    idx_file.write(Int3ByteToStr(lng_int))
+    
   print 'Wrote %d entries' % cnt
 
 

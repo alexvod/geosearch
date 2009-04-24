@@ -15,8 +15,10 @@ public class Searcher {
 	private final int RESULT_LIMIT = 100;
 	private String content;
 	private int[] pos_vector;
-	private int[] lat_vector;
-	private int[] lng_vector;
+	private int min_lat;
+	private int min_lng;
+	private byte[] lat_vector;
+	private byte[] lng_vector;
 	
 	private int[] result_pos;
 	private int count;
@@ -39,28 +41,24 @@ public class Searcher {
 		}
 		int searchStart = 0;
 		int totalFound = 0;
-		while (true) {
+		final int content_length = content.length();
+		while (searchStart < content_length) {
 			int pos = content.indexOf(s, searchStart);
 			if (pos == -1) break;
 
 			// -1 + 1 = 0
 			int start = content.lastIndexOf('\n', pos) + 1;
 			int end = content.indexOf('\n', start + 1);
-			if (end - start > 100) {
-				end = start + 100;
-			}
-			if (end != -1) {
-				result.add(content.substring(start, end));
-			} else {
-				result.add(content.substring(start));
-			}
+			if (end == -1) end = content_length;
+			Log.e("s", "found start=" + start + " end=" + end);
+			result.add(content.substring(start, end));
 			result_pos[totalFound] = start;
 			totalFound++;
 			if (totalFound >= RESULT_LIMIT) {
 				Log.e("s", "got " + totalFound + " results, truncated");
 				break;
 			}
-			searchStart = end;
+			searchStart = end + 1;
 		}
 		if (result.size() == 0) {
 			result.add("-NOT FOUND-");
@@ -75,11 +73,22 @@ public class Searcher {
 		Log.e("pos", "pos = " + pos);
 	   	int idx = getIndex(pos);
 	   	Log.e("idx", "idx = " + idx);
-	   	latlng[0] = lat_vector[idx] * 1e-7;
-	   	latlng[1] = lng_vector[idx] * 1e-7;
+	   	latlng[0] = (Get3ByteInt(lat_vector, idx) + min_lat) * 1e-7;
+	   	latlng[1] = (Get3ByteInt(lng_vector, idx) + min_lng) * 1e-7;
 	}
 	
-    private void loadData() {
+    private int Get3ByteInt(byte[] vector, int idx) {
+    	final int offset = 3 * idx;
+    	int t = 0;
+        for(int i = 2; i >= 0; --i) {
+          t *= 256;
+          int b = vector[offset + i];
+          t += b & 0xff;
+        }
+        return t; 
+	}
+
+	private void loadData() {
     	Log.e("s", "Loading search data...");
     	String stringDataFile = "/sdcard/maps/string.dat";
     	String indexDataFile = "/sdcard/maps/index.dat";
@@ -125,25 +134,17 @@ public class Searcher {
     
     private void loadCoords(String indexDataFile) throws IOException {
     	InputStream stream = new FileInputStream(indexDataFile);
-    	byte[] buffer = new byte[9000];
-    	stream.read(buffer, 0, 4);
+    	byte[] buffer = new byte[20];
+    	stream.read(buffer, 0, 12);
     	count = readInt(buffer, 0);
     	Log.e("s", "num entries " + count);
-    	lat_vector = new int[count + 1];
-    	lng_vector = new int[count + 1];
-    	int num_read = 0;
-    	int entries_read = 0;
-        while ((num_read = stream.read(buffer, 0, 8000)) > 0) {
-        	for (int off = 0; off < num_read; off += 8) {
-        		lat_vector[entries_read] = readInt(buffer, off);
-        		lng_vector[entries_read] = readInt(buffer, off + 4);
-        		entries_read++;
-        		if (entries_read % 10000 == 0) {
-        			Log.e("search", "read " + entries_read + " search entries");
-        		}
-        	}
-        }
-        Log.e("search", "total entries read: " + entries_read);
+    	min_lat = readInt(buffer, 4);
+    	min_lng = readInt(buffer, 8);
+    	Log.e("s", "min_lat=" + min_lat + " min_lng" + min_lng);
+    	lat_vector = new byte[3 * count];
+    	lng_vector = new byte[3 * count];
+    	stream.read(lat_vector, 0, 3 * count);
+    	stream.read(lng_vector, 0, 3 * count);
     	stream.close();
     }
     
@@ -167,7 +168,7 @@ public class Searcher {
     	if (pos >= pos_vector[count-1]) return count-1;
     	// Do binary search.
        	int min_idx = 0;
-        int max_idx = count;
+        int max_idx = count-1;
     	int mid_idx, mid_pos;
     	while (max_idx - min_idx > 1) {
     		mid_idx = (min_idx + max_idx) / 2;
