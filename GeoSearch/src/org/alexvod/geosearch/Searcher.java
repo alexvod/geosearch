@@ -50,7 +50,6 @@ public class Searcher {
 			int start = content.lastIndexOf('\n', pos) + 1;
 			int end = content.indexOf('\n', start + 1);
 			if (end == -1) end = content_length;
-			Log.e("s", "found start=" + start + " end=" + end);
 			result.add(content.substring(start, end));
 			result_pos[totalFound] = start;
 			totalFound++;
