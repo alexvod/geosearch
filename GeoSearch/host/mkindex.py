@@ -162,6 +162,13 @@ def GetMinLatLng(geo_objects):
   return (min_lat, min_lng)
 
 
+def GetNormalizedTitle(geo_object):
+  title = unicode(geo_object.title, 'utf8').lower()
+  title = title.replace('\n', ' ')
+  title = title.replace('\r', ' ')
+  return title
+  
+
 def WriteIndex(geo_objects, out_file, idx_file):
   idx_file.write(IntToStr(len(geo_objects)))
 
@@ -169,20 +176,30 @@ def WriteIndex(geo_objects, out_file, idx_file):
   min_lat_int = int(min_lat * 1e+7)
   min_lng_int = int(min_lng * 1e+7)
   idx_file.write(IntToStr(min_lat_int) + IntToStr(min_lng_int))
-  
+
+  # Calculate total number of characters first.
+  total_chars = 0
+  for geo_object in geo_objects:
+    title = GetNormalizedTitle(geo_object)
+    title += '\n'
+    total_chars += len(title)
+
+  out_file.write(IntToStr(total_chars))
+
+  # Write titles - this must be in sync with the previous loop.
   cnt = 0
   num_chars = 0
   file_pos = 0
   for geo_object in geo_objects:
-    title = unicode(geo_object.title, 'utf8').lower()
-    title = title.replace('\n', ' ')
-    title = title.replace('\r', ' ')
-    #print cnt, num_chars, file_pos, title.encode('utf8'), geo_object.latlng
+    title = GetNormalizedTitle(geo_object)
     title += '\n'
+    #print cnt, num_chars, file_pos, title.encode('utf8'), geo_object.latlng
     out_file.write(title.encode('utf-16le'))
     num_chars += len(title)
     file_pos += len(title.encode('utf8'))
     cnt += 1
+
+  assert num_chars == total_chars
 
   for geo_object in geo_objects:
     lat, lng = geo_object.latlng

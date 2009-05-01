@@ -104,7 +104,7 @@ public class Searcher {
   private int readInt(byte[] buffer, int offset) {
     int t = 0;
     for(int i = 3; i >= 0; --i) {
-      t *= 256;
+      t <<= 8;
       int b = buffer[offset+i];
       t += b & 0xff;
     }
@@ -113,13 +113,14 @@ public class Searcher {
 
   private void loadContent(String stringDataFile) throws IOException {
     FileInputStream stream = new FileInputStream(stringDataFile);
+    byte[] buffer = new byte[4];
+    stream.read(buffer);
+    int totalChars = readInt(buffer, 0);
+    Log.e("s", "Reading " + totalChars + " characters");
     // Read file with UTF-8
     InputStreamReader reader = new InputStreamReader(stream, "UTF-16LE");
     content = "";
-    StringBuilder builder = new StringBuilder();
-    // NOTE: this must be slightly above real number of characters
-    // TODO(alexvod): remove this hack
-    builder.ensureCapacity(1930000);
+    StringBuilder builder = new StringBuilder(totalChars);
     char[] inputBuffer = new char[8192];
     while (true) {
       int numChars = reader.read(inputBuffer);
@@ -127,10 +128,11 @@ public class Searcher {
       builder.append(inputBuffer, 0, numChars);
     }
     content = builder.toString();
-    Log.e("s", "Total " + content.length() + " characters loaded");
+    Log.e("s", "Total " + content.length() + " characters loaded " +
+        "(must be == " + totalChars + ")");
     stream.close();
   }
-
+  
   private void loadCoords(String indexDataFile) throws IOException {
     InputStream stream = new FileInputStream(indexDataFile);
     byte[] buffer = new byte[20];
@@ -139,7 +141,7 @@ public class Searcher {
     Log.e("s", "num entries " + count);
     min_lat = readInt(buffer, 4);
     min_lng = readInt(buffer, 8);
-    Log.e("s", "min_lat=" + min_lat + " min_lng" + min_lng);
+    Log.e("s", "min_lat=" + min_lat + " min_lng=" + min_lng);
     lat_vector = new byte[3 * count];
     lng_vector = new byte[3 * count];
     stream.read(lat_vector, 0, 3 * count);
@@ -158,7 +160,7 @@ public class Searcher {
       pos_vector[idx] = pos + 1;
       idx++;
     }
-    Log.e("s", "found " + idx + " items in strings, must be == " + count);
+    Log.e("s", "found " + idx + " items in strings, must be == " + (count + 1));
     count = idx;
   }
 
