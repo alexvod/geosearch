@@ -149,12 +149,13 @@ public class Searcher {
 
   private void makePosVector() {
     pos_vector = new int[count + 1];
+    pos_vector[0] = 0;
     int pos = -1;
-    int idx = 0;
+    int idx = 1;
     while (true) {
       pos = content.indexOf('\n', pos + 1);
       if (pos == -1) break;
-      pos_vector[idx] = pos;
+      pos_vector[idx] = pos + 1;
       idx++;
     }
     Log.e("s", "found " + idx + " items in strings, must be == " + count);
@@ -173,7 +174,7 @@ public class Searcher {
       mid_idx = (min_idx + max_idx) / 2;
       mid_pos = pos_vector[mid_idx];
       if (pos == mid_pos) return mid_idx;
-      if (pos >= mid_pos) {
+      if (pos > mid_pos) {
         min_idx = mid_idx;
       } else {
         max_idx = mid_idx;
