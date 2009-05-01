@@ -171,12 +171,17 @@ def WriteIndex(geo_objects, out_file, idx_file):
   idx_file.write(IntToStr(min_lat_int) + IntToStr(min_lng_int))
   
   cnt = 0
+  num_chars = 0
+  file_pos = 0
   for geo_object in geo_objects:
-    title = unicode(geo_object.title.lower(), 'utf8').lower().encode('utf8')
+    title = unicode(geo_object.title, 'utf8').lower()
     title = title.replace('\n', ' ')
+    title = title.replace('\r', ' ')
+    #print cnt, num_chars, file_pos, title.encode('utf8'), geo_object.latlng
     title += '\n'
-    out_file.write(title)
-    #print cnt, title
+    out_file.write(title.encode('utf-16le'))
+    num_chars += len(title)
+    file_pos += len(title.encode('utf8'))
     cnt += 1
 
   for geo_object in geo_objects:

@@ -114,7 +114,7 @@ public class Searcher {
   private void loadContent(String stringDataFile) throws IOException {
     FileInputStream stream = new FileInputStream(stringDataFile);
     // Read file with UTF-8
-    InputStreamReader reader = new InputStreamReader(stream, "UTF-8");
+    InputStreamReader reader = new InputStreamReader(stream, "UTF-16LE");
     content = "";
     StringBuilder builder = new StringBuilder();
     // NOTE: this must be slightly above real number of characters
