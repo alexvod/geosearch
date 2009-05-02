@@ -8,6 +8,7 @@ import java.util.List;
 import android.util.Log;
 
 public class ByteStringData implements IStringData {
+  private static final int POS_VECTOR_SAMPLING = 3;
   private final int RESULT_LIMIT = 100;
   private byte[] content;
   private char[] charset;
@@ -90,29 +91,31 @@ public class ByteStringData implements IStringData {
   }
  
   private void makePosVector() {
-    pos_vector = new int[count + 1];
+    pos_vector = new int[(count >> POS_VECTOR_SAMPLING) + 1];
     pos_vector[0] = 0;
     byte separator = char2byte('\n');
     int idx = 1;
+    final int sampling_mask = (1 << POS_VECTOR_SAMPLING) - 1; 
     for (int i = 0; i < content.length; i++) {
       if (content[i] != separator) continue;
-      pos_vector[idx] = i + 1;
+      if ((idx & sampling_mask) == 0) {
+        pos_vector[idx >> POS_VECTOR_SAMPLING] = i + 1;
+      }
       idx++;
     }
-    Log.e("s", "found " + idx + " items in strings, must be == " + (count + 1));
   }
   
   public int getPosForResultNum(int num) {
     return result_pos[num];
   }
 
-  public int getIndex(int pos) {
-    // Check bounds
-    if (pos <= pos_vector[0]) return 0;
-    if (pos >= pos_vector[count-1]) return count-1;
+  private int binarySearchForPos(int pos) {
     // Do binary search.
     int min_idx = 0;
-    int max_idx = count-1;
+    int max_idx = (count - 1) >> POS_VECTOR_SAMPLING;
+    // Check bounds
+    if (pos <= pos_vector[0]) return 0;
+    if (pos >= pos_vector[max_idx]) return max_idx;
     int mid_idx, mid_pos;
     while (max_idx - min_idx > 1) {
       mid_idx = (min_idx + max_idx) / 2;
@@ -124,8 +127,19 @@ public class ByteStringData implements IStringData {
         max_idx = mid_idx;
       }
     }
-    if (pos_vector[min_idx] == pos) return min_idx;
-    return max_idx;
+    if (pos_vector[max_idx] == pos) return max_idx;
+    return min_idx;
+  }
+  
+  public int getIndex(int pos) {
+    int idx = binarySearchForPos(pos);
+    int cur_pos = pos_vector[idx];
+    int cur_idx = idx << POS_VECTOR_SAMPLING;
+    while (cur_pos < pos) {
+      if (content[cur_pos] == separator) cur_idx++;
+      cur_pos++;
+    }
+    return cur_idx;
   }
   
   private boolean decodeString(String string, byte[] bytes) {
