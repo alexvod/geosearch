@@ -20,7 +20,7 @@ public class ByteStringData implements IStringData {
   public ByteStringData() {
     result_pos = new int[RESULT_LIMIT];
   }
-  
+
   private static int readInt(byte[] buffer, int offset) {
     int t = 0;
     for(int i = 3; i >= 0; --i) {
@@ -39,7 +39,7 @@ public class ByteStringData implements IStringData {
 
     charset = readCharset(stream);
     separator = char2byte('\n');
-    
+
     Log.e("s", "Reading " + totalChars + " characters");
     content = new byte[totalChars];
     int numChars = stream.read(content);
@@ -47,7 +47,7 @@ public class ByteStringData implements IStringData {
         "(must be == " + count + ")");
     makePosVector();
   }
-  
+
   private byte char2byte(char ch) {
     // Check bounds
     final int charset_size = charset.length;
@@ -71,11 +71,11 @@ public class ByteStringData implements IStringData {
     if (charset[max_idx] == ch) return (byte)max_idx;
     return -1;
   }
-  
+
   private char byte2char(byte b) {
     return charset[b];
   }
-   
+
   private static char[] readCharset(InputStream stream) throws IOException {
     byte[] buffer = new byte[4];
     stream.read(buffer);
@@ -89,7 +89,7 @@ public class ByteStringData implements IStringData {
     }
     return chars;
   }
- 
+
   private void makePosVector() {
     pos_vector = new int[(count >> POS_VECTOR_SAMPLING) + 1];
     pos_vector[0] = 0;
@@ -104,7 +104,7 @@ public class ByteStringData implements IStringData {
       idx++;
     }
   }
-  
+
   public int getPosForResultNum(int num) {
     return result_pos[num];
   }
@@ -130,7 +130,7 @@ public class ByteStringData implements IStringData {
     if (pos_vector[max_idx] == pos) return max_idx;
     return min_idx;
   }
-  
+
   public int getIndex(int pos) {
     int idx = binarySearchForPos(pos);
     int cur_pos = pos_vector[idx];
@@ -141,7 +141,7 @@ public class ByteStringData implements IStringData {
     }
     return cur_idx;
   }
-  
+
   private boolean decodeString(String string, byte[] bytes) {
     final int length = string.length();
     for (int i = 0; i < length; ++i) {
@@ -155,6 +155,7 @@ public class ByteStringData implements IStringData {
   public List<String> searchSubstring(String s, int max_results) {
     List<String> result = new ArrayList<String>();
     final int str_length = s.length();
+    if (str_length == 0) return result;
     byte[] encoded = new byte[str_length];
     if (!decodeString(s, encoded)) {
       Log.d("s", "cannot decode string");
@@ -204,25 +205,31 @@ public class ByteStringData implements IStringData {
 
   static private int searchSubstringForward(byte[] text, byte[] substr,
       int start) {
-    byte firstByte = substr[0];
+    final byte firstByte = substr[0];
     final int subLen = substr.length;
     final int len = text.length;
     while (true) {
-        int i = searchCharForward(text, firstByte, start);
-        if (i == -1 || subLen + i > len) {
-            return -1; // handles subCount > count || start >= count
+      // Search for the first byte of substr.
+      int i;
+      for (i = start; i < len; ++i) {
+        if (text[i] == firstByte) {
+          break;
         }
-        int i1 = i, i2 = 0;
-        while (++i2 < subLen && text[++i1] == substr[i2]) {
-            // Intentionally empty
-        }
-        if (i2 == subLen) {
-            return i;
-        }
-        start = i + 1;
+      }
+      if (subLen + i > len) {
+        return -1; // handles subCount > count || start >= count
+      }
+      int i1 = i, i2 = 0;
+      while (++i2 < subLen && text[++i1] == substr[i2]) {
+        // Intentionally empty
+      }
+      if (i2 == subLen) {
+        return i;
+      }
+      start = i + 1;
     }
   }
-  
+
   private String getSubstring(int start, int end) {
     char[] chars = new char[end - start];
     for (int i = start; i < end; ++i) {
