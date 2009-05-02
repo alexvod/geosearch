@@ -39,6 +39,7 @@ public class Searcher {
       result.add("-NOTHING TO SEARCH-");
       return result;
     }
+    long startTime = System.currentTimeMillis();
     int searchStart = 0;
     int totalFound = 0;
     final int content_length = content.length();
@@ -63,6 +64,8 @@ public class Searcher {
       result.add("-NOT FOUND-");
     }
     Log.e("s", "num results " + result.size());
+    long endTime = System.currentTimeMillis();
+    Log.d("s", "search took " + (endTime - startTime) + "ms");
     return result;
   }
 
