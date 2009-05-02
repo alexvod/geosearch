@@ -208,17 +208,9 @@ public class ByteStringData implements IStringData {
     final byte firstByte = substr[0];
     final int subLen = substr.length;
     final int len = text.length - subLen;
-    while (true) {
-      // Search for the first byte of substr.
-      int i;
-      for (i = start; i <= len; ++i) {
-        if (text[i] == firstByte) {
-          break;
-        }
-      }
-      if (i > len) {
-        return -1; // handles subCount > count || start >= count
-      }
+    // Search for the first byte of substr.
+    for (int i = start; i <= len; ++i) {
+      if (text[i] != firstByte) continue;
       int i1 = i, i2 = 0;
       while (++i2 < subLen && text[++i1] == substr[i2]) {
         // Intentionally empty
@@ -226,8 +218,8 @@ public class ByteStringData implements IStringData {
       if (i2 == subLen) {
         return i;
       }
-      start = i + 1;
     }
+    return -1;
   }
 
   private String getSubstring(int start, int end) {
