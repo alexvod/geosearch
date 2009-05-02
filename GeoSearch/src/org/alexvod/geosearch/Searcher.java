@@ -3,7 +3,6 @@ package org.alexvod.geosearch;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -13,7 +12,7 @@ import android.util.Log;
 // loaded) collection of points.
 public class Searcher {
   private final int RESULT_LIMIT = 100;
-  private String content;
+  private IStringData string_data;
   private int[] pos_vector;
   private int min_lat;
   private int min_lng;
@@ -30,7 +29,7 @@ public class Searcher {
 
   public List<String> search(String s) {
     List<String> result = new LinkedList<String>();
-    if (content == null) {
+    if (string_data == null) {
       result.add("NO CONTENT LOADED");
       return result;
     }
@@ -42,16 +41,16 @@ public class Searcher {
     long startTime = System.currentTimeMillis();
     int searchStart = 0;
     int totalFound = 0;
-    final int content_length = content.length();
+    final int content_length = string_data.getLength();
     while (searchStart < content_length) {
-      int pos = content.indexOf(s, searchStart);
+      int pos = string_data.searchSubstring(s, searchStart);
       if (pos == -1) break;
 
       // -1 + 1 = 0
-      int start = content.lastIndexOf('\n', pos) + 1;
-      int end = content.indexOf('\n', start + 1);
+      int start = string_data.searchCharForward('\n', pos) + 1;
+      int end = string_data.searchCharForward('\n', start + 1);
       if (end == -1) end = content_length;
-      result.add(content.substring(start, end));
+      result.add(string_data.getSubstring(start, end));
       result_pos[totalFound] = start;
       totalFound++;
       if (totalFound >= RESULT_LIMIT) {
@@ -65,7 +64,7 @@ public class Searcher {
     }
     Log.e("s", "num results " + result.size());
     long endTime = System.currentTimeMillis();
-    Log.d("s", "search took " + (endTime - startTime) + "ms");
+    Log.d("s", "search for " + s + " took " + (endTime - startTime) + "ms");
     return result;
   }
 
@@ -95,15 +94,26 @@ public class Searcher {
     String stringDataFile = "/sdcard/maps/string.dat";
     String indexDataFile = "/sdcard/maps/index.dat";
     try {
-      loadContent(stringDataFile);
       loadCoords(indexDataFile);
-      makePosVector();
+      loadContent(stringDataFile);
+      pos_vector = string_data.makePosVector();
     } catch (IOException f) {
       Log.e("s", "Cannot read file");
     }
     Log.e("s", "Loaded search data.");
   }
 
+  private void loadContent(String stringDataFile) throws IOException {
+    FileInputStream stream = new FileInputStream(stringDataFile);
+    byte[] buffer = new byte[4];
+    stream.read(buffer);
+    //int dataFormat = readInt(buffer, 0);
+    IStringData data = new CharStringData();
+    data.initFromStream(stream);
+    stream.close();
+    string_data = data;
+  }
+  
   private int readInt(byte[] buffer, int offset) {
     int t = 0;
     for(int i = 3; i >= 0; --i) {
@@ -113,29 +123,7 @@ public class Searcher {
     }
     return t; 
   }
-
-  private void loadContent(String stringDataFile) throws IOException {
-    FileInputStream stream = new FileInputStream(stringDataFile);
-    byte[] buffer = new byte[4];
-    stream.read(buffer);
-    int totalChars = readInt(buffer, 0);
-    Log.e("s", "Reading " + totalChars + " characters");
-    // Read file with UTF-8
-    InputStreamReader reader = new InputStreamReader(stream, "UTF-16LE");
-    content = "";
-    StringBuilder builder = new StringBuilder(totalChars);
-    char[] inputBuffer = new char[8192];
-    while (true) {
-      int numChars = reader.read(inputBuffer);
-      if (numChars <= 0) break;
-      builder.append(inputBuffer, 0, numChars);
-    }
-    content = builder.toString();
-    Log.e("s", "Total " + content.length() + " characters loaded " +
-        "(must be == " + totalChars + ")");
-    stream.close();
-  }
-  
+ 
   private void loadCoords(String indexDataFile) throws IOException {
     InputStream stream = new FileInputStream(indexDataFile);
     byte[] buffer = new byte[20];
@@ -150,21 +138,6 @@ public class Searcher {
     stream.read(lat_vector, 0, 3 * count);
     stream.read(lng_vector, 0, 3 * count);
     stream.close();
-  }
-
-  private void makePosVector() {
-    pos_vector = new int[count + 1];
-    pos_vector[0] = 0;
-    int pos = -1;
-    int idx = 1;
-    while (true) {
-      pos = content.indexOf('\n', pos + 1);
-      if (pos == -1) break;
-      pos_vector[idx] = pos + 1;
-      idx++;
-    }
-    Log.e("s", "found " + idx + " items in strings, must be == " + (count + 1));
-    count = idx;
   }
 
   private int getIndex(int pos) {

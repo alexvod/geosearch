@@ -169,14 +169,30 @@ def GetNormalizedTitle(geo_object):
   return title
   
 
-def WriteIndex(geo_objects, out_file, idx_file):
-  idx_file.write(IntToStr(len(geo_objects)))
+def WriteCoords(geo_objects, out_file):
+  out_file.write(IntToStr(len(geo_objects)))
 
   min_lat, min_lng = GetMinLatLng(geo_objects)
   min_lat_int = int(min_lat * 1e+7)
   min_lng_int = int(min_lng * 1e+7)
-  idx_file.write(IntToStr(min_lat_int) + IntToStr(min_lng_int))
+  out_file.write(IntToStr(min_lat_int) + IntToStr(min_lng_int))
 
+  for geo_object in geo_objects:
+    lat, lng = geo_object.latlng
+    lat_int = int((lat - min_lat) * 1e+7)
+    out_file.write(Int3ByteToStr(lat_int))
+
+  for geo_object in geo_objects:
+    lat, lng = geo_object.latlng
+    lng_int = int((lng - min_lng) * 1e+7)
+    out_file.write(Int3ByteToStr(lng_int))
+    
+  print 'Wrote %d coordinate entries' % len(geo_objects)
+
+
+def WriteTitles(geo_objects, out_file):
+  out_file.write(IntToStr(1))
+  
   # Calculate total number of characters first.
   total_chars = 0
   for geo_object in geo_objects:
@@ -184,7 +200,7 @@ def WriteIndex(geo_objects, out_file, idx_file):
     title += '\n'
     total_chars += len(title)
 
-  out_file.write(IntToStr(total_chars))
+  out_file.write(IntToStr(len(geo_objects)) + IntToStr(total_chars))
 
   # Write titles - this must be in sync with the previous loop.
   cnt = 0
@@ -201,17 +217,22 @@ def WriteIndex(geo_objects, out_file, idx_file):
 
   assert num_chars == total_chars
 
-  for geo_object in geo_objects:
-    lat, lng = geo_object.latlng
-    lat_int = int((lat - min_lat) * 1e+7)
-    idx_file.write(Int3ByteToStr(lat_int))
+  print 'Wrote %d titles' % len(geo_objects)
 
+
+def Hack(geo_objects):
+  chars = set()
   for geo_object in geo_objects:
-    lat, lng = geo_object.latlng
-    lng_int = int((lng - min_lng) * 1e+7)
-    idx_file.write(Int3ByteToStr(lng_int))
-    
-  print 'Wrote %d entries' % cnt
+    title = GetNormalizedTitle(geo_object)
+    for ch in title:
+      chars.add(ch)
+  print 'Total', len(chars), 'different chars'
+  cnt = 0
+  chars = list(chars)
+  chars.sort()
+  for ch in chars:
+    print cnt, ch.encode('utf8')
+    cnt += 1
 
 
 def MakeIndex():
@@ -222,11 +243,13 @@ def MakeIndex():
       geo_objects += ReadPlainTextObjects(text_file)
   if _OPTIONS.wikimapia_dir:
     geo_objects += ReadWikimapiaObjects(_OPTIONS.wikimapia_dir)
-  out_file = open('string.dat', 'w')
-  idx_file = open('index.dat', 'w')
-  WriteIndex(geo_objects, out_file, idx_file)
-  out_file.close()
-  idx_file.close()
+  title_file = open('string.dat', 'w')
+  coord_file = open('index.dat', 'w')
+  WriteCoords(geo_objects, coord_file)
+  WriteTitles(geo_objects, title_file)
+  title_file.close()
+  coord_file.close()
+  Hack(geo_objects)
 
 
 def ReadPlainTextObjects(filename):
