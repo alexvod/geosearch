@@ -207,16 +207,16 @@ public class ByteStringData implements IStringData {
       int start) {
     final byte firstByte = substr[0];
     final int subLen = substr.length;
-    final int len = text.length;
+    final int len = text.length - subLen;
     while (true) {
       // Search for the first byte of substr.
       int i;
-      for (i = start; i < len; ++i) {
+      for (i = start; i <= len; ++i) {
         if (text[i] == firstByte) {
           break;
         }
       }
-      if (subLen + i > len) {
+      if (i > len) {
         return -1; // handles subCount > count || start >= count
       }
       int i1 = i, i2 = 0;
