@@ -284,7 +284,7 @@ def WriteTitles(geo_objects, out_file):
   file_pos = 0
   for geo_object in geo_objects:
     title = GetNormalizedTitle(geo_object)
-    print cnt, num_chars, file_pos, title.encode('utf8'), geo_object.latlng
+    #print cnt, num_chars, file_pos, title.encode('utf8'), geo_object.latlng
     title += '\n'
     encoded_title = writer.EncodeString(title)
     out_file.write(encoded_title)
