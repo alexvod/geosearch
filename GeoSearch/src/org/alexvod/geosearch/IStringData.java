@@ -2,13 +2,11 @@ package org.alexvod.geosearch;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 
 public interface IStringData {
-  public int searchSubstring(String needle, int pos);
-  public int searchCharForward(char ch, int pos);
-  public int searchCharBackward(char ch, int pos);
-  public int getLength();
-  public String getSubstring(int start, int end);
   public void initFromStream(InputStream stream) throws IOException;
-  public int[] makePosVector();
+  public List<String> searchSubstring(String needle, int max_results);
+  public int getIndex(int pos);
+  public int getPosForResultNum(int num);
 }

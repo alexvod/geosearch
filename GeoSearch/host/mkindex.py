@@ -190,9 +190,83 @@ def WriteCoords(geo_objects, out_file):
   print 'Wrote %d coordinate entries' % len(geo_objects)
 
 
+class TitleWriter(object):
+  # Implementers should override tag with unique positive value.
+  tag = 0
+
+  def EncodeString(self, string):
+    raise NotImplemented()
+
+  def WriteHeader(self, out_file):
+    raise NotImplemented()
+
+
+class UTF16FormatWriter(TitleWriter):
+  tag = 1
+
+  def EncodeString(self, string):
+    return title.encode('utf-16le')
+
+  def WriteHeader(self, out_file):
+    pass
+
+
+class CustomCharsetFormatWriter(TitleWriter):
+  tag = 2
+
+  def __init__(self):
+    self.char2byte = {}
+    self.byte2char = {}
+
+  def BuildCharset(self, geo_objects):
+    chars = set('\n')
+    for geo_object in geo_objects:
+      title = GetNormalizedTitle(geo_object)
+      for ch in title:
+        chars.add(ch)
+
+    print 'Total', len(chars), 'different chars'
+    cnt = 0
+    chars = list(chars)
+    chars.sort()
+
+    if len(chars) > 220:
+      return False
+
+    num_chr = 0
+    for char in chars:
+      self.char2byte[char] = num_chr
+      self.byte2char[num_chr] = char
+      num_chr += 1
+    return True
+
+  def EncodeString(self, string):
+    assert type(string) == unicode
+    result = ''
+    for ch in string:
+      code = self.char2byte[ch]
+      result += chr(code)
+    return result
+
+  def WriteHeader(self, out_file):
+    out_file.write(IntToStr(len(self.byte2char)))
+    for code in range(len(self.byte2char)):
+      out_file.write(IntToStr(ord(self.byte2char[code])))
+
+
+def SelectOptimalWriter(geo_objects):
+  writer = CustomCharsetFormatWriter()
+  if writer.BuildCharset(geo_objects):
+    return writer
+  return UTF16FormatWriter()
+      
+
 def WriteTitles(geo_objects, out_file):
-  out_file.write(IntToStr(1))
-  
+  writer = SelectOptimalWriter(geo_objects)
+  assert writer
+  print 'Using %s' % writer.__class__.__name__
+  out_file.write(IntToStr(writer.tag))
+
   # Calculate total number of characters first.
   total_chars = 0
   for geo_object in geo_objects:
@@ -202,38 +276,26 @@ def WriteTitles(geo_objects, out_file):
 
   out_file.write(IntToStr(len(geo_objects)) + IntToStr(total_chars))
 
+  writer.WriteHeader(out_file)
+
   # Write titles - this must be in sync with the previous loop.
   cnt = 0
   num_chars = 0
   file_pos = 0
   for geo_object in geo_objects:
     title = GetNormalizedTitle(geo_object)
+    print cnt, num_chars, file_pos, title.encode('utf8'), geo_object.latlng
     title += '\n'
-    #print cnt, num_chars, file_pos, title.encode('utf8'), geo_object.latlng
-    out_file.write(title.encode('utf-16le'))
+    encoded_title = writer.EncodeString(title)
+    out_file.write(encoded_title)
     num_chars += len(title)
-    file_pos += len(title.encode('utf8'))
+    file_pos += len(encoded_title)
     cnt += 1
-
+    
   assert num_chars == total_chars
-
+  
   print 'Wrote %d titles' % len(geo_objects)
-
-
-def Hack(geo_objects):
-  chars = set()
-  for geo_object in geo_objects:
-    title = GetNormalizedTitle(geo_object)
-    for ch in title:
-      chars.add(ch)
-  print 'Total', len(chars), 'different chars'
-  cnt = 0
-  chars = list(chars)
-  chars.sort()
-  for ch in chars:
-    print cnt, ch.encode('utf8')
-    cnt += 1
-
+  
 
 def MakeIndex():
   geo_objects = []
@@ -249,7 +311,6 @@ def MakeIndex():
   WriteTitles(geo_objects, title_file)
   title_file.close()
   coord_file.close()
-  Hack(geo_objects)
 
 
 def ReadPlainTextObjects(filename):

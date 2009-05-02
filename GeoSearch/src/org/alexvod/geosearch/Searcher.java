@@ -13,17 +13,14 @@ import android.util.Log;
 public class Searcher {
   private final int RESULT_LIMIT = 100;
   private IStringData string_data;
-  private int[] pos_vector;
   private int min_lat;
   private int min_lng;
   private byte[] lat_vector;
   private byte[] lng_vector;
 
-  private int[] result_pos;
   private int count;
 
   public Searcher() {
-    result_pos = new int[RESULT_LIMIT];
     loadData();
   }
 
@@ -39,26 +36,9 @@ public class Searcher {
       return result;
     }
     long startTime = System.currentTimeMillis();
-    int searchStart = 0;
-    int totalFound = 0;
-    final int content_length = string_data.getLength();
-    while (searchStart < content_length) {
-      int pos = string_data.searchSubstring(s, searchStart);
-      if (pos == -1) break;
-
-      // -1 + 1 = 0
-      int start = string_data.searchCharForward('\n', pos) + 1;
-      int end = string_data.searchCharForward('\n', start + 1);
-      if (end == -1) end = content_length;
-      result.add(string_data.getSubstring(start, end));
-      result_pos[totalFound] = start;
-      totalFound++;
-      if (totalFound >= RESULT_LIMIT) {
-        Log.e("s", "got " + totalFound + " results, truncated");
-        break;
-      }
-      searchStart = end + 1;
-    }
+    
+    result = string_data.searchSubstring(s, RESULT_LIMIT);
+    
     if (result.size() == 0) {
       result.add("-NOT FOUND-");
     }
@@ -70,15 +50,15 @@ public class Searcher {
 
   public void getCoordsForResult(int num, double latlng[]) {
     Log.e("s", "num = " + num);
-    int pos = result_pos[num]; 
+    int pos = string_data.getPosForResultNum(num); 
     Log.e("pos", "pos = " + pos);
-    int idx = getIndex(pos);
+    int idx = string_data.getIndex(pos);
     Log.e("idx", "idx = " + idx);
     latlng[0] = (Get3ByteInt(lat_vector, idx) + min_lat) * 1e-7;
     latlng[1] = (Get3ByteInt(lng_vector, idx) + min_lng) * 1e-7;
   }
 
-  private int Get3ByteInt(byte[] vector, int idx) {
+  private static int Get3ByteInt(byte[] vector, int idx) {
     final int offset = 3 * idx;
     int t = 0;
     for(int i = 2; i >= 0; --i) {
@@ -96,7 +76,6 @@ public class Searcher {
     try {
       loadCoords(indexDataFile);
       loadContent(stringDataFile);
-      pos_vector = string_data.makePosVector();
     } catch (IOException f) {
       Log.e("s", "Cannot read file");
     }
@@ -107,14 +86,22 @@ public class Searcher {
     FileInputStream stream = new FileInputStream(stringDataFile);
     byte[] buffer = new byte[4];
     stream.read(buffer);
-    //int dataFormat = readInt(buffer, 0);
-    IStringData data = new CharStringData();
+    int dataFormat = readInt(buffer, 0);
+    IStringData data = null; 
+    if (dataFormat == 1) {
+      data = new CharStringData();
+    } else if (dataFormat == 2) {
+      data = new ByteStringData();
+    } else {
+      Log.e("s", "Unknown string file format " + dataFormat);
+      throw new RuntimeException();
+    }
     data.initFromStream(stream);
     stream.close();
     string_data = data;
   }
   
-  private int readInt(byte[] buffer, int offset) {
+  private static int readInt(byte[] buffer, int offset) {
     int t = 0;
     for(int i = 3; i >= 0; --i) {
       t <<= 8;
@@ -138,27 +125,5 @@ public class Searcher {
     stream.read(lat_vector, 0, 3 * count);
     stream.read(lng_vector, 0, 3 * count);
     stream.close();
-  }
-
-  private int getIndex(int pos) {
-    // Check bounds
-    if (pos <= pos_vector[0]) return 0;
-    if (pos >= pos_vector[count-1]) return count-1;
-    // Do binary search.
-    int min_idx = 0;
-    int max_idx = count-1;
-    int mid_idx, mid_pos;
-    while (max_idx - min_idx > 1) {
-      mid_idx = (min_idx + max_idx) / 2;
-      mid_pos = pos_vector[mid_idx];
-      if (pos == mid_pos) return mid_idx;
-      if (pos > mid_pos) {
-        min_idx = mid_idx;
-      } else {
-        max_idx = mid_idx;
-      }
-    }
-    if (pos_vector[min_idx] == pos) return min_idx;
-    return max_idx;
   }
 }
