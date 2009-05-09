@@ -89,6 +89,7 @@ public class GeoSearchActivity extends Activity {
 
        SharedPreferences.Editor ed = mPrefs.edit();
        ed.putString("last_search_text", lastSearchText);
+       ed.putString("last_search_pos", lastSearchText);
        ed.commit();
    }
 }

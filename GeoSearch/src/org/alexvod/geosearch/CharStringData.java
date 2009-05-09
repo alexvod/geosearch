@@ -9,6 +9,7 @@ import java.util.List;
 import android.util.Log;
 
 public class CharStringData implements IStringData {
+  private static final String LOGTAG = "GeoSearch_CharStringData";
   private final int RESULT_LIMIT = 100;
   private String content;
   int count;
@@ -36,7 +37,7 @@ public class CharStringData implements IStringData {
       result_pos[totalFound] = start;
       totalFound++;
       if (totalFound >= max_result) {
-        Log.e("s", "got " + totalFound + " results, truncated");
+        Log.d(LOGTAG, "got " + totalFound + " results, truncated");
         break;
       }
       searchStart = end + 1;
@@ -59,7 +60,7 @@ public class CharStringData implements IStringData {
     stream.read(buffer);
     count = readInt(buffer, 0);
     int totalChars = readInt(buffer, 4);
-    Log.e("s", "Reading " + totalChars + " characters");
+    Log.d(LOGTAG, "Reading " + totalChars + " characters");
     // Read file with UTF-8
     InputStreamReader reader = new InputStreamReader(stream, "UTF-16LE");
     StringBuilder builder = new StringBuilder(totalChars);
@@ -70,7 +71,7 @@ public class CharStringData implements IStringData {
       builder.append(inputBuffer, 0, numChars);
     }
     content = builder.toString();
-    Log.e("s", "Total " + content.length() + " characters loaded " +
+    Log.d(LOGTAG, "Total " + content.length() + " characters loaded " +
         "(must be == " + totalChars + ")");
     makePosVector();
   }
@@ -108,7 +109,7 @@ public class CharStringData implements IStringData {
       pos_vector[idx] = pos + 1;
       idx++;
     }
-    Log.e("s", "found " + idx + " items in strings, must be == " + (count + 1));
+    Log.d(LOGTAG, "found " + idx + " items in strings, must be == " + (count + 1));
   }
 
   public int getPosForResultNum(int num) {

@@ -8,6 +8,7 @@ import java.util.List;
 import android.util.Log;
 
 public class ByteStringData implements IStringData {
+  private static final String LOGTAG = "GeoSearch_ByteStringData";
   private static final int POS_VECTOR_SAMPLING = 3;
   private final int RESULT_LIMIT = 100;
   private byte[] content;
@@ -40,10 +41,10 @@ public class ByteStringData implements IStringData {
     charset = readCharset(stream);
     separator = char2byte('\n');
 
-    Log.e("s", "Reading " + totalChars + " characters");
+    Log.d(LOGTAG, "Reading " + totalChars + " characters");
     content = new byte[totalChars];
     int numChars = stream.read(content);
-    Log.e("s", "Total " + numChars + " characters loaded " +
+    Log.d(LOGTAG, "Total " + numChars + " characters loaded " +
         "(must be == " + count + ")");
     makePosVector();
   }
@@ -80,7 +81,7 @@ public class ByteStringData implements IStringData {
     byte[] buffer = new byte[4];
     stream.read(buffer);
     int charset_size = readInt(buffer, 0);
-    Log.d("s", "Charset has " + charset_size + " chars");
+    Log.d(LOGTAG, "Custom charset has " + charset_size + " chars");
     char[] chars = new char[charset_size];
     buffer = new byte[4*charset_size];
     stream.read(buffer);
@@ -158,7 +159,7 @@ public class ByteStringData implements IStringData {
     if (str_length == 0) return result;
     byte[] encoded = new byte[str_length];
     if (!decodeString(s, encoded)) {
-      Log.d("s", "cannot decode string");
+      Log.d(LOGTAG, "cannot decode string");
       return result;
     }
     int searchStart = 0;
@@ -176,7 +177,7 @@ public class ByteStringData implements IStringData {
       result_pos[totalFound] = start;
       totalFound++;
       if (totalFound >= max_results) {
-        Log.e("s", "got " + totalFound + " results, truncated");
+        Log.d(LOGTAG, "got " + totalFound + " results, truncated");
         break;
       }
       searchStart = end + 1;
