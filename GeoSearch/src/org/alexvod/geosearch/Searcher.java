@@ -11,6 +11,7 @@ import android.util.Log;
 // Class that search for string (entered by user) with in (a previously 
 // loaded) collection of points.
 public class Searcher {
+  private static final String LOGTAG = "GeoSearch_Searcher";
   private final int RESULT_LIMIT = 100;
   private IStringData string_data;
   private int min_lat;
@@ -23,37 +24,34 @@ public class Searcher {
   public Searcher() {
     loadData();
   }
-
-  public List<String> search(String s) {
+  
+  public List<String> search(String substring) {
     List<String> result = new LinkedList<String>();
     if (string_data == null) {
-      result.add("NO CONTENT LOADED");
+      result.add("-NO CONTENT LOADED-");
       return result;
     }
-    Log.e("s", "substring " + s);
-    if (s.length() == 0) {
+    Log.d(LOGTAG, "searching for " + substring);
+    if (substring.length() == 0) {
       result.add("-NOTHING TO SEARCH-");
       return result;
     }
     long startTime = System.currentTimeMillis();
     
-    result = string_data.searchSubstring(s, RESULT_LIMIT);
+    result = string_data.searchSubstring(substring, RESULT_LIMIT);
     
     if (result.size() == 0) {
       result.add("-NOT FOUND-");
     }
-    Log.e("s", "num results " + result.size());
+    Log.d(LOGTAG, "got " + result.size() + " results");
     long endTime = System.currentTimeMillis();
-    Log.d("s", "search for " + s + " took " + (endTime - startTime) + "ms");
+    Log.d(LOGTAG, "search for " + substring + " took " + (endTime - startTime) + "ms");
     return result;
   }
 
   public void getCoordsForResult(int num, double latlng[]) {
-    Log.e("s", "num = " + num);
     int pos = string_data.getPosForResultNum(num); 
-    Log.e("pos", "pos = " + pos);
     int idx = string_data.getIndex(pos);
-    Log.e("idx", "idx = " + idx);
     latlng[0] = (Get3ByteInt(lat_vector, idx) + min_lat) * 1e-7;
     latlng[1] = (Get3ByteInt(lng_vector, idx) + min_lng) * 1e-7;
   }
@@ -70,16 +68,15 @@ public class Searcher {
   }
 
   private void loadData() {
-    Log.e("s", "Loading search data...");
+    Log.d(LOGTAG, "Loading search data...");
     String stringDataFile = "/sdcard/maps/string.dat";
     String indexDataFile = "/sdcard/maps/index.dat";
     try {
       loadCoords(indexDataFile);
       loadContent(stringDataFile);
     } catch (IOException f) {
-      Log.e("s", "Cannot read file");
+      Log.e(LOGTAG, "Cannot read file");
     }
-    Log.e("s", "Loaded search data.");
   }
 
   private void loadContent(String stringDataFile) throws IOException {
@@ -93,7 +90,7 @@ public class Searcher {
     } else if (dataFormat == 2) {
       data = new ByteStringData();
     } else {
-      Log.e("s", "Unknown string file format " + dataFormat);
+      Log.e(LOGTAG, "Unknown string file format " + dataFormat);
       throw new RuntimeException();
     }
     data.initFromStream(stream);
@@ -116,10 +113,9 @@ public class Searcher {
     byte[] buffer = new byte[20];
     stream.read(buffer, 0, 12);
     count = readInt(buffer, 0);
-    Log.e("s", "num entries " + count);
+    Log.d(LOGTAG, "coord file has " + count + " entries");
     min_lat = readInt(buffer, 4);
     min_lng = readInt(buffer, 8);
-    Log.e("s", "min_lat=" + min_lat + " min_lng=" + min_lng);
     lat_vector = new byte[3 * count];
     lng_vector = new byte[3 * count];
     stream.read(lat_vector, 0, 3 * count);
