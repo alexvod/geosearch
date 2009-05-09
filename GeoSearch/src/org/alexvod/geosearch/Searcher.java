@@ -11,7 +11,7 @@ import android.util.Log;
 // Class that search for string (entered by user) with in (a previously 
 // loaded) collection of points.
 public class Searcher {
-  private static final String LOGTAG = "GeoSearch_Search";
+  private static final String LOGTAG = "GeoSearch_Searcher";
   private final int RESULT_LIMIT = 100;
   private IStringData string_data;
   private int min_lat;
