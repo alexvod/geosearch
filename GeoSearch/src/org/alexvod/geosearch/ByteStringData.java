@@ -45,7 +45,7 @@ public class ByteStringData implements IStringData {
     content = new byte[totalChars];
     int numChars = stream.read(content);
     Log.d(LOGTAG, "Total " + numChars + " characters loaded " +
-        "(must be == " + count + ")");
+        "(must be == " + totalChars + ")");
     makePosVector();
   }
 
