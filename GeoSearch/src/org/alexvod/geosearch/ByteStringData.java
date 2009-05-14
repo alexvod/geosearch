@@ -5,6 +5,8 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.alexvod.FastIndexOf;
+
 import android.util.Log;
 
 public class ByteStringData implements IStringData {
@@ -166,7 +168,12 @@ public class ByteStringData implements IStringData {
     int totalFound = 0;
     final int content_length = content.length;
     while (searchStart < content_length) {
-      int pos = searchSubstringForward(content, encoded, searchStart);
+      int pos = 0;
+      if (FastIndexOf.nativeLibraryAvailable) {
+        pos = FastIndexOf.fastIndexOf(content, encoded, searchStart);
+      } else {
+        pos = searchSubstringForward(content, encoded, searchStart);
+      }
       if (pos == -1) break;
 
       // -1 + 1 = 0
