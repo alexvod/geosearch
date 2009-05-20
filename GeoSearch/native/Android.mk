@@ -2,7 +2,7 @@ LOCAL_PATH:= $(call my-dir)
 include $(CLEAR_VARS)
 
 LOCAL_SRC_FILES:= \
-FastIndexOf.cpp
+NativeUtils.cpp
 
 LOCAL_C_INCLUDES += \
 $(JNI_H_INCLUDE)
@@ -12,6 +12,6 @@ LOCAL_SHARED_LIBRARIES := \
 
 LOCAL_PRELINK_MODULE := false
 
-LOCAL_MODULE:= libfastindexof_jni
+LOCAL_MODULE:= libnativeutils_jni
 
 include $(BUILD_SHARED_LIBRARY)

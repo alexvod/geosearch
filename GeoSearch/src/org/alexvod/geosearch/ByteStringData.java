@@ -5,7 +5,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.alexvod.FastIndexOf;
+import org.ushmax.NativeUtils;
 
 import android.util.Log;
 
@@ -94,18 +94,11 @@ public class ByteStringData implements IStringData {
   }
 
   private void makePosVector() {
+    long startTime = System.currentTimeMillis();
     pos_vector = new int[(count >> POS_VECTOR_SAMPLING) + 1];
-    pos_vector[0] = 0;
     byte separator = char2byte('\n');
-    int idx = 1;
-    final int sampling_mask = (1 << POS_VECTOR_SAMPLING) - 1; 
-    for (int i = 0; i < content.length; i++) {
-      if (content[i] != separator) continue;
-      if ((idx & sampling_mask) == 0) {
-        pos_vector[idx >> POS_VECTOR_SAMPLING] = i + 1;
-      }
-      idx++;
-    }
+    NativeUtils.makeSampledPosVector(content, pos_vector, separator, POS_VECTOR_SAMPLING);
+    Log.d(LOGTAG, "sample vector: " + (System.currentTimeMillis() - startTime) + "ms");
   }
 
   public int getPosForResultNum(int num) {
@@ -169,8 +162,8 @@ public class ByteStringData implements IStringData {
     final int content_length = content.length;
     while (searchStart < content_length) {
       int pos = 0;
-      if (FastIndexOf.nativeLibraryAvailable) {
-        pos = FastIndexOf.fastIndexOf(content, encoded, searchStart);
+      if (NativeUtils.nativeLibraryAvailable) {
+        pos = NativeUtils.indexOf(content, encoded, searchStart);
       } else {
         pos = searchSubstringForward(content, encoded, searchStart);
       }
