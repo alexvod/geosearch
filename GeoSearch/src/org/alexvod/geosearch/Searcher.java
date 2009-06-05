@@ -6,6 +6,8 @@ import java.io.InputStream;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.ushmax.IOUtils;
+
 import android.util.Log;
 
 // Class that search for string (entered by user) with in (a previously 
@@ -60,7 +62,7 @@ public class Searcher {
     final int offset = 3 * idx;
     int t = 0;
     for(int i = 2; i >= 0; --i) {
-      t *= 256;
+      t <<= 8;
       int b = vector[offset + i];
       t += b & 0xff;
     }
@@ -83,7 +85,7 @@ public class Searcher {
     FileInputStream stream = new FileInputStream(stringDataFile);
     byte[] buffer = new byte[4];
     stream.read(buffer);
-    int dataFormat = readInt(buffer, 0);
+    int dataFormat = IOUtils.readIntLE(buffer, 0);
     IStringData data = null; 
     if (dataFormat == 1) {
       data = new CharStringData();
@@ -98,24 +100,14 @@ public class Searcher {
     string_data = data;
   }
   
-  private static int readInt(byte[] buffer, int offset) {
-    int t = 0;
-    for(int i = 3; i >= 0; --i) {
-      t <<= 8;
-      int b = buffer[offset+i];
-      t += b & 0xff;
-    }
-    return t; 
-  }
- 
   private void loadCoords(String indexDataFile) throws IOException {
     InputStream stream = new FileInputStream(indexDataFile);
     byte[] buffer = new byte[20];
     stream.read(buffer, 0, 12);
-    count = readInt(buffer, 0);
+    count = IOUtils.readIntLE(buffer, 0);
     Log.d(LOGTAG, "coord file has " + count + " entries");
-    min_lat = readInt(buffer, 4);
-    min_lng = readInt(buffer, 8);
+    min_lat = IOUtils.readIntLE(buffer, 4);
+    min_lng = IOUtils.readIntLE(buffer, 8);
     lat_vector = new byte[3 * count];
     lng_vector = new byte[3 * count];
     stream.read(lat_vector, 0, 3 * count);
