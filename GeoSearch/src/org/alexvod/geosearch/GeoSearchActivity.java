@@ -1,6 +1,9 @@
 package org.alexvod.geosearch;
 
+import java.io.IOException;
 import java.util.List;
+
+import org.ushmax.NativeUtils;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -25,6 +28,12 @@ public class GeoSearchActivity extends Activity {
   /** Called when the activity is first created. */
   @Override
   public void onCreate(Bundle savedInstanceState) {
+    try {
+      NativeUtils.loadNativeLibrary(this, "org.alexvod.geosearch");
+    } catch (IOException e) {
+      Log.e(LOGTAG, "Could not load native library");
+      e.printStackTrace();
+    }
     super.onCreate(savedInstanceState);
     mPrefs = getPreferences(MODE_WORLD_WRITEABLE);
     lastSearchText = mPrefs.getString("last_search_text", "");
