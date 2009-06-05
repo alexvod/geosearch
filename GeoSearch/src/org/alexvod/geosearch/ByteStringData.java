@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.ushmax.IOUtils;
 import org.ushmax.NativeUtils;
 
 import android.util.Log;
@@ -24,21 +25,11 @@ public class ByteStringData implements IStringData {
     result_pos = new int[RESULT_LIMIT];
   }
 
-  private static int readInt(byte[] buffer, int offset) {
-    int t = 0;
-    for(int i = 3; i >= 0; --i) {
-      t <<= 8;
-      int b = buffer[offset+i];
-      t += b & 0xff;
-    }
-    return t; 
-  }
-
   public void initFromStream(InputStream stream) throws IOException {
     byte[] buffer = new byte[8];
     stream.read(buffer);
-    count = readInt(buffer, 0);
-    int totalChars = readInt(buffer, 4);
+    count = IOUtils.readIntLE(buffer, 0);
+    int totalChars = IOUtils.readIntLE(buffer, 4);
 
     charset = readCharset(stream);
     separator = char2byte('\n');
@@ -82,13 +73,13 @@ public class ByteStringData implements IStringData {
   private static char[] readCharset(InputStream stream) throws IOException {
     byte[] buffer = new byte[4];
     stream.read(buffer);
-    int charset_size = readInt(buffer, 0);
+    int charset_size = IOUtils.readIntLE(buffer, 0);
     Log.d(LOGTAG, "Custom charset has " + charset_size + " chars");
     char[] chars = new char[charset_size];
     buffer = new byte[4*charset_size];
     stream.read(buffer);
     for (int i = 0; i < charset_size; i++) {
-      chars[i] = (char)readInt(buffer, 4*i);
+      chars[i] = (char)IOUtils.readIntLE(buffer, 4*i);
     }
     return chars;
   }

@@ -6,6 +6,8 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.ushmax.IOUtils;
+
 import android.util.Log;
 
 public class CharStringData implements IStringData {
@@ -45,21 +47,11 @@ public class CharStringData implements IStringData {
     return result; 
   }
 
-  private static int readInt(byte[] buffer, int offset) {
-    int t = 0;
-    for(int i = 3; i >= 0; --i) {
-      t <<= 8;
-      int b = buffer[offset+i];
-      t += b & 0xff;
-    }
-    return t; 
-  }
-
   public void initFromStream(InputStream stream) throws IOException {
     byte[] buffer = new byte[8];
     stream.read(buffer);
-    count = readInt(buffer, 0);
-    int totalChars = readInt(buffer, 4);
+    count = IOUtils.readIntLE(buffer, 0);
+    int totalChars = IOUtils.readIntLE(buffer, 4);
     Log.d(LOGTAG, "Reading " + totalChars + " characters");
     // Read file with UTF-8
     InputStreamReader reader = new InputStreamReader(stream, "UTF-16LE");
