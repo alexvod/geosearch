@@ -33,10 +33,7 @@ public class IOUtils {
     NativeUtils.readIntArrayBE(buffer, offset, dst, size);
   }
 
-  public static char[] readCharArray(byte[] buffer, int[] pos) throws IOException {
-    int offset = pos[0];
-    int size = readIntBE(buffer, offset); offset += 4;
-    char[] str = new char[size];
+  public static void readCharArrayBE(byte[] buffer, int offset, char[] dst, int size) throws IOException {
     /*
     int end = offset + (size << 1);
     int idx = 0;
@@ -45,15 +42,42 @@ public class IOUtils {
       int b2 = buffer[offset]; offset++;
       str[idx] = (char) ((b1 << 8) + b2);
       idx++;
-    }
-    pos[0] = offset;
-    return str;*/
-    NativeUtils.readCharArrayBE(buffer, offset, str, size);
+    } */
+    NativeUtils.readCharArrayBE(buffer, offset, dst, size);
+  }
+
+  public static void readCharArrayLE(byte[] buffer, int offset, char[] dst, int size) throws IOException {
+    /*
+    int end = offset + (size << 1);
+    int idx = 0;
+    while (offset < end) {
+      int b1 = buffer[offset]; offset++;
+      int b2 = buffer[offset]; offset++;
+      str[idx] = (char) ((b2 << 8) + b1);
+      idx++;
+    } */
+    NativeUtils.readCharArrayLE(buffer, offset, dst, size);
+  }
+
+  public static char[] readCharArrayWithLenBE(byte[] buffer, int[] pos) throws IOException {
+    int offset = pos[0];
+    int size = readIntBE(buffer, offset); offset += 4;
+    char[] str = new char[size];
+    readCharArrayBE(buffer, offset, str, size);
+    pos[0] = offset + (size << 1);
+    return str;
+  }
+
+  public static char[] readCharArrayWithLenLE(byte[] buffer, int[] pos) throws IOException {
+    int offset = pos[0];
+    int size = readIntLE(buffer, offset); offset += 4;
+    char[] str = new char[size];
+    readCharArrayLE(buffer, offset, str, size);
     pos[0] = offset + (size << 1);
     return str;
   }
   
-  public static void writeCharArray(DataOutput out, char[] s) throws IOException {
+  public static void writeCharArrayBE(DataOutput out, char[] s) throws IOException {
     int size = s.length;
     out.writeInt(size);
     for (int i = 0; i < size; i++) {
@@ -61,7 +85,7 @@ public class IOUtils {
     }
   }
   
-  public static void writeIntArray(int[] data, DataOutputStream out) throws IOException {
+  public static void writeIntArrayBE(int[] data, DataOutputStream out) throws IOException {
     final int count = data.length;
     for (int i = 0; i < count; i++) {
       out.writeInt(data[i]);

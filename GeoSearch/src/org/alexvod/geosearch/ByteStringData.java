@@ -76,11 +76,9 @@ public class ByteStringData implements IStringData {
     int charset_size = IOUtils.readIntLE(buffer, 0);
     Log.d(LOGTAG, "Custom charset has " + charset_size + " chars");
     char[] chars = new char[charset_size];
-    buffer = new byte[4*charset_size];
+    buffer = new byte[2*charset_size];
     stream.read(buffer);
-    for (int i = 0; i < charset_size; i++) {
-      chars[i] = (char)IOUtils.readIntLE(buffer, 4*i);
-    }
+    IOUtils.readCharArrayLE(buffer, 0, chars, charset_size);
     return chars;
   }
 

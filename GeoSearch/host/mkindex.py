@@ -149,6 +149,17 @@ def Int3ByteToStr(num):
   return result
 
 
+def Int2ByteToStr(num):
+  assert num >= 0
+  assert num < 2**16
+  result = ''
+  for _ in range(2):
+    char = chr(num & 255)
+    result += char
+    num = num >> 8
+  return result
+
+
 def GetMinLatLng(geo_objects):
   assert len(geo_objects) > 0
   min_lat, min_lng = geo_objects[0].latlng
@@ -251,7 +262,7 @@ class CustomCharsetFormatWriter(TitleWriter):
   def WriteHeader(self, out_file):
     out_file.write(IntToStr(len(self.byte2char)))
     for code in range(len(self.byte2char)):
-      out_file.write(IntToStr(ord(self.byte2char[code])))
+      out_file.write(Int2ByteToStr(ord(self.byte2char[code])))
 
 
 def SelectOptimalWriter(geo_objects):
