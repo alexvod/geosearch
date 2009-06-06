@@ -11,12 +11,12 @@ import android.util.Log;
 public class NativeUtils {
   private static final String LOGTAG = "NativeUtils";
 
-  public static void loadNativeLibrary(Context context, String appname) throws IOException {
+  public static void loadNativeLibrary(Context context, String libPath, int rawResourceId) throws IOException {
     if (nativeLibraryAvailable) return;
-    String libraryPath = "/data/data/" + appname + "/libnativeutils_jni.so"; 
+    String libraryPath = libPath + "/libnativeutils_jni.so"; 
     if (!(new File(libraryPath)).exists()) {
       Log.d(LOGTAG, "Native library, doesn't exist. Trying to create");
-      InputStream resourceStream = context.getResources().openRawResource(org.alexvod.geosearch.R.raw.libnativeutils_jni);
+      InputStream resourceStream = context.getResources().openRawResource(rawResourceId);
       byte[] data = new byte[resourceStream.available()];
       resourceStream.read(data);
       resourceStream.close();
@@ -39,9 +39,11 @@ public class NativeUtils {
   
   private static native int nativeIndexOf(byte[] str, byte[] substr, int start);
   private static native void nativeReadIntArrayBE(byte[] buffer, int offset, int[] dst, int size);
+  private static native void nativeReadIntArrayLE(byte[] buffer, int offset, int[] dst, int size);
   private static native int nativeMakeSampledPosVector(byte[] content, int[] dst, byte separator, int sample);
   private static native int nativeGetMaxIntVectorDelta(int[] data);
   private static native void nativeReadCharArrayBE(byte[] buffer, int offset, char[] dst, int size);
+  private static native void nativeReadCharArrayLE(byte[] buffer, int offset, char[] dst, int size);
   
   public static boolean nativeLibraryAvailable;
   
@@ -59,6 +61,15 @@ public class NativeUtils {
     if (offset < 0) throw new ArrayIndexOutOfBoundsException();
     if (offset + (size << 2) > buffer.length) throw new ArrayIndexOutOfBoundsException();
     nativeReadIntArrayBE(buffer, offset, dst, size);
+  }
+  
+  public static void readIntArrayLE(byte[] buffer, int offset, int[] dst, int size) {
+    if (buffer == null) throw new NullPointerException();
+    if (dst == null) throw new NullPointerException();
+    if (size > dst.length) throw new ArrayIndexOutOfBoundsException();
+    if (offset < 0) throw new ArrayIndexOutOfBoundsException();
+    if (offset + (size << 2) > buffer.length) throw new ArrayIndexOutOfBoundsException();
+    nativeReadIntArrayLE(buffer, offset, dst, size);
   }
 
   public static void makeSampledPosVector(byte[] content, int[] dst, byte separator, int sample) {
@@ -82,5 +93,14 @@ public class NativeUtils {
     if (offset < 0) throw new ArrayIndexOutOfBoundsException();
     if (offset + (size << 1) > buffer.length) throw new ArrayIndexOutOfBoundsException();
     nativeReadCharArrayBE(buffer, offset, dst, size);
+  }
+
+  public static void readCharArrayLE(byte[] buffer, int offset, char[] dst, int size) {
+    if (buffer == null) throw new NullPointerException();
+    if (dst == null) throw new NullPointerException();
+    if (size > dst.length) throw new ArrayIndexOutOfBoundsException();
+    if (offset < 0) throw new ArrayIndexOutOfBoundsException();
+    if (offset + (size << 1) > buffer.length) throw new ArrayIndexOutOfBoundsException();
+    nativeReadCharArrayLE(buffer, offset, dst, size);
   }
 }

@@ -29,7 +29,8 @@ public class GeoSearchActivity extends Activity {
   @Override
   public void onCreate(Bundle savedInstanceState) {
     try {
-      NativeUtils.loadNativeLibrary(this, "org.alexvod.geosearch");
+      NativeUtils.loadNativeLibrary(this, "/data/data/org.alexvod.geosearch",
+          org.alexvod.geosearch.R.raw.libnativeutils_jni);    
     } catch (IOException e) {
       Log.e(LOGTAG, "Could not load native library");
       e.printStackTrace();
