@@ -1,64 +1,28 @@
 package org.ushmax;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.zip.CRC32;
-
-import android.content.Context;
 import android.util.Log;
 
 public class NativeUtils {
   private static final String LOGTAG = "NativeUtils";
   // Update these constants when library is updated.
-  private static final int kLibLength = 9304;;
-  private static final long kLibChecksum = 0xa72b4b81l;
+  
+  static {
+    loadNativeLibrary();
+  }
 
-  public static void loadNativeLibrary(Context context, String libPath, int rawResourceId) throws IOException {
+  private static void loadNativeLibrary() {
     if (nativeLibraryAvailable) return;
-    String libraryPath = libPath + "/libnativeutils_jni.so";
-    boolean uptodate = true;
-    File lib = new File(libraryPath);
-    if (!lib.exists()) {
-      uptodate = false;
-    } else if (lib.length() != kLibLength) {
-      uptodate = false;
-    } else {
-      FileInputStream istream = new FileInputStream(lib);
-      byte[] data = new byte[kLibLength];
-      istream.read(data);
-      istream.close();
-      CRC32 crc32 = new CRC32();
-      crc32.update(data);
-      if (crc32.getValue() != kLibChecksum) {
-        uptodate = false;
-      }
-    }
-    if (!uptodate) {
-      Log.d(LOGTAG, "Native library doesn't exist or out of date. Trying to create");
-      InputStream resourceStream = context.getResources().openRawResource(rawResourceId);
-      byte[] data = new byte[resourceStream.available()];
-      resourceStream.read(data);
-      resourceStream.close();
-      Log.d(LOGTAG, "Read " + data.length  + " bytes from resource");
-      FileOutputStream outStream = new FileOutputStream(libraryPath);
-      outStream.write(data);
-      outStream.close();
-    } else {
-      Log.d(LOGTAG, "Native library is up to date");
-    }
+    String libName = "nativeutils";
     try {
-      Log.i(LOGTAG, "Trying to load " + libraryPath);
-      System.load(libraryPath);
+      Log.i(LOGTAG, "Trying to load " + libName);
+      System.loadLibrary(libName);
       Log.i(LOGTAG, "Successfully loaded!");
       nativeLibraryAvailable = true;
     }
     catch (UnsatisfiedLinkError ule) {
-      Log.e(LOGTAG, "WARNING: Could not load " + libraryPath);
+      Log.e(LOGTAG, "WARNING: Could not load " + libName);
       nativeLibraryAvailable = false;
-    }
+    }    
   }
 
   private static native int nativeIndexOf(byte[] str, byte[] substr, int start);

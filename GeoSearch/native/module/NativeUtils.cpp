@@ -1,8 +1,9 @@
-#define LOG_TAG "NativeUtils"
-#include "utils/Log.h"
+#include <android/log.h>
+#include <jni.h>
+#include <stdlib.h>
 
-#include "JNIHelp.h"
-#include "jni.h"
+#define LOG_TAG "NativeUtils"
+#define LOGE(...) (__android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__))
 
 static int searchSubstringForward(jbyte *str, int str_len, jbyte *substr, int substr_len, int start) {
   jbyte first_byte = substr[0];
@@ -87,6 +88,36 @@ static void readCharArrayLE(jbyte* buffer, int offset, jchar* dst, int size) {
     int b2 = buffer[offset]; offset++;
     dst[i] = ((b2 << 8) + b1);
   }
+}
+
+static jbyte getMinByteArray(jbyte* buffer, int size) {
+  if (size == 0) return 0;
+  jbyte minval = buffer[0];
+  jbyte* ptr = buffer;
+  jbyte* end = buffer + size;
+  while (ptr < end) {
+    jbyte value = *ptr;
+    if (value < minval) {
+      minval = value;
+    }
+    ptr++;
+  }
+  return minval;
+}
+
+static jbyte getMaxByteArray(jbyte* buffer, int size) {
+  if (size == 0) return 0;
+  jbyte maxval = buffer[0];
+  jbyte* ptr = buffer;
+  jbyte* end = buffer + size;
+  while (ptr < end) {
+    jbyte value = *ptr;
+    if (value > maxval) {
+      maxval = value;
+    }
+    ptr++;
+  }
+  return maxval;
 }
 
 extern "C" {
@@ -291,6 +322,50 @@ JNIEXPORT void JNICALL Java_org_ushmax_NativeUtils_nativeReadCharArrayLE(
   env->ReleasePrimitiveArrayCritical(dst, dst_ptr, 0);
 }
 
+/*
+ * Class:     org.ushmax.NativeUtils
+ * Method:    getMinByteArray
+ * Signature: ([B)B
+ */
+JNIEXPORT jbyte JNICALL Java_org_ushmax_NativeUtils_nativeGetMinByteArray(
+    JNIEnv *env, jclass clazz , jbyteArray data) {
+  int data_len = env->GetArrayLength(data);
+  
+  jbyte *data_ptr = (jbyte*)env->GetPrimitiveArrayCritical(data, 0);
+  if (data_ptr == 0) {
+    LOGE("Cannot get data array");
+    return -1;
+  }
+  
+  jbyte result = getMinByteArray(data_ptr, data_len);
+
+  env->ReleasePrimitiveArrayCritical(data, data_ptr, JNI_ABORT);
+
+  return result;
+}
+
+/*
+ * Class:     org.ushmax.NativeUtils
+ * Method:    getMaxByteArray
+ * Signature: ([B)B
+ */
+JNIEXPORT jbyte JNICALL Java_org_ushmax_NativeUtils_nativeGetMaxByteArray(
+    JNIEnv *env, jclass clazz , jbyteArray data) {
+  int data_len = env->GetArrayLength(data);
+  
+  jbyte *data_ptr = (jbyte*)env->GetPrimitiveArrayCritical(data, 0);
+  if (data_ptr == 0) {
+    LOGE("Cannot get data array");
+    return -1;
+  }
+  
+  jbyte result = getMaxByteArray(data_ptr, data_len);
+
+  env->ReleasePrimitiveArrayCritical(data, data_ptr, JNI_ABORT);
+
+  return result;
+}
+
 }
 
 /*
@@ -312,6 +387,10 @@ static JNINativeMethod gMethods[] = {
     (void*)Java_org_ushmax_NativeUtils_nativeReadCharArrayBE },
   { "nativeReadCharArrayLE", "([BI[CI)V",
     (void*)Java_org_ushmax_NativeUtils_nativeReadCharArrayLE },
+  { "nativeGetMinByteArray", "([B)B",
+    (void*)Java_org_ushmax_NativeUtils_nativeGetMinByteArray },
+  { "nativeGetMaxByteArray", "([B)B",
+    (void*)Java_org_ushmax_NativeUtils_nativeGetMaxByteArray },
 };
 
 static int register_org_ushmax_NativeUtils(JNIEnv* env)
@@ -320,11 +399,11 @@ static int register_org_ushmax_NativeUtils(JNIEnv* env)
 
   clazz = env->FindClass("org/ushmax/NativeUtils");
   if (clazz == NULL) {
-    fprintf(stderr, "Native registration unable to find class");
+    LOGE("Native registration unable to find class");
     return -1;
   }
   
-  return env->RegisterNatives(clazz, gMethods, 7);
+  return env->RegisterNatives(clazz, gMethods, 9);
 }
 
 extern "C" jint JNI_OnLoad(JavaVM* vm, void* reserved)
@@ -336,7 +415,10 @@ extern "C" jint JNI_OnLoad(JavaVM* vm, void* reserved)
     LOGE("GetEnv failed!");
     return result;
   }
-  LOG_ASSERT(env, "Could not retrieve the env!");
+  if (!env) {
+    LOGE("Could not retrieve the env!");
+    return result;
+  }
 
   register_org_ushmax_NativeUtils(env);
 
