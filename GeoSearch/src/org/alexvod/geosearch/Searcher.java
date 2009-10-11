@@ -53,8 +53,8 @@ public class Searcher {
   public void getCoordsForResult(int num, double latlng[]) {
     int pos = string_data.getPosForResultNum(num); 
     int idx = string_data.getIndex(pos);
-    latlng[0] = (Get3ByteInt(latVector, idx) + minLat) * 1e-7;
-    latlng[1] = (Get3ByteInt(lngVector, idx) + minLng) * 1e-7;
+    latlng[0] = (Get3ByteInt(latVector, idx) + minLat) * 1e-6;
+    latlng[1] = (Get3ByteInt(lngVector, idx) + minLng) * 1e-6;
   }
 
   private static int Get3ByteInt(byte[] vector, int idx) {
