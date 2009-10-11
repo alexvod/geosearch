@@ -42,6 +42,30 @@ static void readIntArrayLE(jbyte* buffer, int offset, jint* dst, int size) {
   }
 }
 
+static void writeIntArrayBE(jint* src, int start, int count, jbyte* dst, int offset) {
+  for (int i = 0; i < count; i++) {
+    int word = src[start + i];
+    jbyte b4 = (jbyte) (word & 0xff); word >>= 8;
+    jbyte b3 = (jbyte) (word & 0xff); word >>= 8;
+    jbyte b2 = (jbyte) (word & 0xff); word >>= 8;
+    jbyte b1 = (jbyte) (word & 0xff);
+    dst[offset++] = b1;
+    dst[offset++] = b2;
+    dst[offset++] = b3;
+    dst[offset++] = b4;
+  }
+}
+
+static void writeCharArrayBE(jchar* src, int start, int count, jbyte* dst, int offset) {
+  for (int i = 0; i < count; i++) {
+    int ch = src[start + i];
+    jbyte b2 = (jbyte) (ch & 0xff); ch >>= 8;
+    jbyte b1 = (jbyte) (ch & 0xff);
+    dst[offset++] = b1;
+    dst[offset++] = b2;
+  }
+}
+
 static jint makeSampledPosVector(jbyte* content, int size, jint* dst,
                                  int dst_size, jbyte separator,
                                  int sample) {
@@ -76,8 +100,8 @@ static jint getMaxIntVectorDelta(jint* data, int size) {
 
 static void readCharArrayBE(jbyte* buffer, int offset, jchar* dst, int size) {
   for (int i = 0; i < size; i++) {
-    int b1 = buffer[offset]; offset++;
-    int b2 = buffer[offset]; offset++;
+    unsigned int b1 = (unsigned char)buffer[offset]; offset++;
+    unsigned int b2 = (unsigned char)buffer[offset]; offset++;
     dst[i] = ((b1 << 8) + b2);
   }
 }
@@ -123,11 +147,11 @@ static jbyte getMaxByteArray(jbyte* buffer, int size) {
 extern "C" {
 
 /*
- * Class:     org.ushmax.NativeUtils
+ * Class:     org.nativeutils.NativeUtils
  * Method:    nativeIndexOf
  * Signature: ([B[BI)I
  */
-JNIEXPORT jint JNICALL Java_org_ushmax_NativeUtils_nativeIndexOf(
+JNIEXPORT jint JNICALL Java_org_nativeutils_NativeUtils_nativeIndexOf(
    JNIEnv *env, jclass clazz , jbyteArray str, jbyteArray substr, jint start) {
   jboolean is_copy;
 
@@ -156,11 +180,11 @@ JNIEXPORT jint JNICALL Java_org_ushmax_NativeUtils_nativeIndexOf(
 }
 
 /*
- * Class:     org.ushmax.NativeUtils
+ * Class:     org.nativeutils.NativeUtils
  * Method:    nativeReadIntArrayBE
  * Signature: ([BI[II)V
  */
-JNIEXPORT void JNICALL Java_org_ushmax_NativeUtils_nativeReadIntArrayBE(
+JNIEXPORT void JNICALL Java_org_nativeutils_NativeUtils_nativeReadIntArrayBE(
     JNIEnv *env, jclass clazz , jbyteArray buffer, jint offset,
     jintArray dst, jint size) {
   jbyte *buf_ptr = (jbyte*)env->GetPrimitiveArrayCritical(buffer, 0);
@@ -183,11 +207,11 @@ JNIEXPORT void JNICALL Java_org_ushmax_NativeUtils_nativeReadIntArrayBE(
 }
 
 /*
- * Class:     org.ushmax.NativeUtils
+ * Class:     org.nativeutils.NativeUtils
  * Method:    nativeReadIntArrayLE
  * Signature: ([BI[II)V
  */
-JNIEXPORT void JNICALL Java_org_ushmax_NativeUtils_nativeReadIntArrayLE(
+JNIEXPORT void JNICALL Java_org_nativeutils_NativeUtils_nativeReadIntArrayLE(
     JNIEnv *env, jclass clazz , jbyteArray buffer, jint offset,
     jintArray dst, jint size) {
   jbyte *buf_ptr = (jbyte*)env->GetPrimitiveArrayCritical(buffer, 0);
@@ -210,12 +234,66 @@ JNIEXPORT void JNICALL Java_org_ushmax_NativeUtils_nativeReadIntArrayLE(
 }
 
 /*
- * Class:     org.ushmax.NativeUtils
+ * Class:     org.nativeutils.NativeUtils
+ * Method:    nativeWriteIntArrayBE
+ * Signature: ([III[BI)V
+ */
+JNIEXPORT void JNICALL Java_org_nativeutils_NativeUtils_nativeWriteIntArrayBE(
+    JNIEnv *env, jclass clazz , jintArray src, jint start, jint count,
+    jbyteArray dst, jint offset) {
+  jint *src_ptr = (jint*)env->GetPrimitiveArrayCritical(src, 0);
+  if (src_ptr == 0) {
+    LOGE("Cannot get src array");
+    return;
+  }
+  
+  jbyte *dst_ptr = (jbyte*)env->GetPrimitiveArrayCritical(dst, 0);
+  if (dst_ptr == 0) {
+    LOGE("Cannot get dst array");
+    env->ReleasePrimitiveArrayCritical(src, src_ptr, JNI_ABORT);
+    return;
+  }
+
+  writeIntArrayBE(src_ptr, start, count, dst_ptr, offset);
+
+  env->ReleasePrimitiveArrayCritical(src, src_ptr, JNI_ABORT);
+  env->ReleasePrimitiveArrayCritical(dst, dst_ptr, 0);
+}
+
+/*
+ * Class:     org.nativeutils.NativeUtils
+ * Method:    nativeWriteCharArrayBE
+ * Signature: ([CII[BI)V
+ */
+JNIEXPORT void JNICALL Java_org_nativeutils_NativeUtils_nativeWriteCharArrayBE(
+    JNIEnv *env, jclass clazz , jcharArray src, jint start, jint count,
+    jbyteArray dst, jint offset) {
+  jchar *src_ptr = (jchar*)env->GetPrimitiveArrayCritical(src, 0);
+  if (src_ptr == 0) {
+    LOGE("Cannot get src array");
+    return;
+  }
+  
+  jbyte *dst_ptr = (jbyte*)env->GetPrimitiveArrayCritical(dst, 0);
+  if (dst_ptr == 0) {
+    LOGE("Cannot get dst array");
+    env->ReleasePrimitiveArrayCritical(src, src_ptr, JNI_ABORT);
+    return;
+  }
+
+  writeCharArrayBE(src_ptr, start, count, dst_ptr, offset);
+
+  env->ReleasePrimitiveArrayCritical(src, src_ptr, JNI_ABORT);
+  env->ReleasePrimitiveArrayCritical(dst, dst_ptr, 0);
+}
+
+/*
+ * Class:     org.nativeutils.NativeUtils
  * Method:    makeSampledPosVector
  * Signature: ([B[IBI)I
  */
 
-JNIEXPORT jint JNICALL Java_org_ushmax_NativeUtils_makeSampledPosVector(
+JNIEXPORT jint JNICALL Java_org_nativeutils_NativeUtils_makeSampledPosVector(
     JNIEnv *env, jclass clazz, jbyteArray content, jintArray dst,
     jbyte separator, jint sample) {
 
@@ -245,12 +323,12 @@ JNIEXPORT jint JNICALL Java_org_ushmax_NativeUtils_makeSampledPosVector(
 }
 
 /*
- * Class:     org.ushmax.NativeUtils
+ * Class:     org.nativeutils.NativeUtils
  * Method:    getMaxIntVectorDelta
  * Signature: ([I)I
  */
 
-JNIEXPORT jint JNICALL Java_org_ushmax_NativeUtils_getMaxIntVectorDelta(
+JNIEXPORT jint JNICALL Java_org_nativeutils_NativeUtils_getMaxIntVectorDelta(
     JNIEnv *env, jclass clazz, jintArray data) {
 
   int data_len = env->GetArrayLength(data);
@@ -269,11 +347,11 @@ JNIEXPORT jint JNICALL Java_org_ushmax_NativeUtils_getMaxIntVectorDelta(
 }
 
 /*
- * Class:     org.ushmax.NativeUtils
+ * Class:     org.nativeutils.NativeUtils
  * Method:    nativeReadCharArrayBE
  * Signature: ([BI[CI)V
  */
-JNIEXPORT void JNICALL Java_org_ushmax_NativeUtils_nativeReadCharArrayBE(
+JNIEXPORT void JNICALL Java_org_nativeutils_NativeUtils_nativeReadCharArrayBE(
     JNIEnv *env, jclass clazz , jbyteArray buffer, jint offset,
     jcharArray dst, jint size) {
   jbyte *buf_ptr = (jbyte*)env->GetPrimitiveArrayCritical(buffer, 0);
@@ -296,11 +374,11 @@ JNIEXPORT void JNICALL Java_org_ushmax_NativeUtils_nativeReadCharArrayBE(
 }
 
 /*
- * Class:     org.ushmax.NativeUtils
+ * Class:     org.nativeutils.NativeUtils
  * Method:    nativeReadCharArrayLE
  * Signature: ([BI[CI)V
  */
-JNIEXPORT void JNICALL Java_org_ushmax_NativeUtils_nativeReadCharArrayLE(
+JNIEXPORT void JNICALL Java_org_nativeutils_NativeUtils_nativeReadCharArrayLE(
     JNIEnv *env, jclass clazz , jbyteArray buffer, jint offset,
     jcharArray dst, jint size) {
   jbyte *buf_ptr = (jbyte*)env->GetPrimitiveArrayCritical(buffer, 0);
@@ -323,11 +401,11 @@ JNIEXPORT void JNICALL Java_org_ushmax_NativeUtils_nativeReadCharArrayLE(
 }
 
 /*
- * Class:     org.ushmax.NativeUtils
+ * Class:     org.nativeutils.NativeUtils
  * Method:    getMinByteArray
  * Signature: ([B)B
  */
-JNIEXPORT jbyte JNICALL Java_org_ushmax_NativeUtils_nativeGetMinByteArray(
+JNIEXPORT jbyte JNICALL Java_org_nativeutils_NativeUtils_nativeGetMinByteArray(
     JNIEnv *env, jclass clazz , jbyteArray data) {
   int data_len = env->GetArrayLength(data);
   
@@ -345,11 +423,11 @@ JNIEXPORT jbyte JNICALL Java_org_ushmax_NativeUtils_nativeGetMinByteArray(
 }
 
 /*
- * Class:     org.ushmax.NativeUtils
+ * Class:     org.nativeutils.NativeUtils
  * Method:    getMaxByteArray
  * Signature: ([B)B
  */
-JNIEXPORT jbyte JNICALL Java_org_ushmax_NativeUtils_nativeGetMaxByteArray(
+JNIEXPORT jbyte JNICALL Java_org_nativeutils_NativeUtils_nativeGetMaxByteArray(
     JNIEnv *env, jclass clazz , jbyteArray data) {
   int data_len = env->GetArrayLength(data);
   
@@ -374,36 +452,40 @@ JNIEXPORT jbyte JNICALL Java_org_ushmax_NativeUtils_nativeGetMaxByteArray(
 static JNINativeMethod gMethods[] = {
   /* name, signature, funcPtr */
   { "nativeIndexOf", "([B[BI)I",
-    (void*)Java_org_ushmax_NativeUtils_nativeIndexOf },
+    (void*)Java_org_nativeutils_NativeUtils_nativeIndexOf },
   { "nativeReadIntArrayBE", "([BI[II)V",
-    (void*)Java_org_ushmax_NativeUtils_nativeReadIntArrayBE },
+    (void*)Java_org_nativeutils_NativeUtils_nativeReadIntArrayBE },
   { "nativeReadIntArrayLE", "([BI[II)V",
-    (void*)Java_org_ushmax_NativeUtils_nativeReadIntArrayLE },
+    (void*)Java_org_nativeutils_NativeUtils_nativeReadIntArrayLE },
+  { "nativeWriteIntArrayBE", "([III[BI)V",
+    (void*)Java_org_nativeutils_NativeUtils_nativeWriteIntArrayBE },
   { "nativeMakeSampledPosVector", "([B[IBI)I",
-    (void*)Java_org_ushmax_NativeUtils_makeSampledPosVector },
+    (void*)Java_org_nativeutils_NativeUtils_makeSampledPosVector },
   { "nativeGetMaxIntVectorDelta", "([I)I",
-    (void*)Java_org_ushmax_NativeUtils_getMaxIntVectorDelta },
+    (void*)Java_org_nativeutils_NativeUtils_getMaxIntVectorDelta },
   { "nativeReadCharArrayBE", "([BI[CI)V",
-    (void*)Java_org_ushmax_NativeUtils_nativeReadCharArrayBE },
+    (void*)Java_org_nativeutils_NativeUtils_nativeReadCharArrayBE },
   { "nativeReadCharArrayLE", "([BI[CI)V",
-    (void*)Java_org_ushmax_NativeUtils_nativeReadCharArrayLE },
+    (void*)Java_org_nativeutils_NativeUtils_nativeReadCharArrayLE },
+  { "nativeWriteCharArrayBE", "([CII[BI)V",
+    (void*)Java_org_nativeutils_NativeUtils_nativeWriteCharArrayBE },
   { "nativeGetMinByteArray", "([B)B",
-    (void*)Java_org_ushmax_NativeUtils_nativeGetMinByteArray },
+    (void*)Java_org_nativeutils_NativeUtils_nativeGetMinByteArray },
   { "nativeGetMaxByteArray", "([B)B",
-    (void*)Java_org_ushmax_NativeUtils_nativeGetMaxByteArray },
+    (void*)Java_org_nativeutils_NativeUtils_nativeGetMaxByteArray },
 };
 
-static int register_org_ushmax_NativeUtils(JNIEnv* env)
+static int register_org_nativeutils_NativeUtils(JNIEnv* env)
 {
   jclass clazz;
 
-  clazz = env->FindClass("org/ushmax/NativeUtils");
+  clazz = env->FindClass("org/nativeutils/NativeUtils");
   if (clazz == NULL) {
     LOGE("Native registration unable to find class");
     return -1;
   }
   
-  return env->RegisterNatives(clazz, gMethods, 9);
+  return env->RegisterNatives(clazz, gMethods, 11);
 }
 
 extern "C" jint JNI_OnLoad(JavaVM* vm, void* reserved)
@@ -420,7 +502,7 @@ extern "C" jint JNI_OnLoad(JavaVM* vm, void* reserved)
     return result;
   }
 
-  register_org_ushmax_NativeUtils(env);
+  register_org_nativeutils_NativeUtils(env);
 
   return JNI_VERSION_1_4;
 }
