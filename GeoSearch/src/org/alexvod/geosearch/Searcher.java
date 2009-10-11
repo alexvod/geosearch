@@ -60,7 +60,7 @@ public class Searcher {
   private static int Get3ByteInt(byte[] vector, int idx) {
     final int offset = 3 * idx;
     int t = 0;
-    for(int i = 2; i >= 0; --i) {
+    for(int i = 0; i < 3; i++) {
       t <<= 8;
       int b = vector[offset + i];
       t += b & 0xff;
