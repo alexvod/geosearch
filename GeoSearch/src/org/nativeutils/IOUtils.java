@@ -1,10 +1,11 @@
-package org.ushmax;
+package org.nativeutils;
 
-import java.io.DataOutput;
-import java.io.DataOutputStream;
 import java.io.IOException;
 
 public class IOUtils {
+  // Currently Dalvik VM limits the whole application to 16 MB.
+  private static final int MAX_STRING_LEN = 32 * 1024 * 1024;
+
   public static int readIntBE(byte[] buffer, int offset) {
     int b1 = buffer[offset] & 0xff; offset++;
     int b2 = buffer[offset] & 0xff; offset++;
@@ -62,6 +63,9 @@ public class IOUtils {
   public static char[] readCharArrayWithLenBE(byte[] buffer, int[] pos) throws IOException {
     int offset = pos[0];
     int size = readIntBE(buffer, offset); offset += 4;
+    if ((size < 0) || (size > MAX_STRING_LEN)) {
+      throw new ArrayIndexOutOfBoundsException();
+    }
     char[] str = new char[size];
     readCharArrayBE(buffer, offset, str, size);
     pos[0] = offset + (size << 1);
@@ -77,18 +81,33 @@ public class IOUtils {
     return str;
   }
   
-  public static void writeCharArrayBE(DataOutput out, char[] s) throws IOException {
-    int size = s.length;
-    out.writeInt(size);
-    for (int i = 0; i < size; i++) {
-      out.writeChar(s[i]);
-    }
-  }
-  
-  public static void writeIntArrayBE(int[] data, DataOutputStream out) throws IOException {
-    final int count = data.length;
+  public static void writeIntArrayBE(int[] src, int start, int count,
+      byte[] dst, int offset) {
+    /*
     for (int i = 0; i < count; i++) {
-      out.writeInt(data[i]);
-    }
+      int word = src[start + i];
+      byte b4 = (byte) (word & 0xff); word >>= 8;
+      byte b3 = (byte) (word & 0xff); word >>= 8;
+      byte b2 = (byte) (word & 0xff); word >>= 8;
+      byte b1 = (byte) (word & 0xff);
+      dst[offset++] = b1;
+      dst[offset++] = b2;
+      dst[offset++] = b3;
+      dst[offset++] = b4;
+    }*/
+    NativeUtils.writeIntArrayBE(src, start, count, dst, offset);
+  }
+
+  public static void writeCharArrayBE(char[] src, int start, int count,
+      byte[] dst, int offset) {
+    /*
+    for (int i = 0; i < count; i++) {
+      char ch = src[start + i];
+      byte b2 = (byte) (ch & 0xff); ch >>= 8;
+      byte b1 = (byte) (ch & 0xff);
+      dst[offset++] = b1;
+      dst[offset++] = b2;
+    }*/
+    NativeUtils.writeCharArrayBE(src, start, count, dst, offset);
   }
 }

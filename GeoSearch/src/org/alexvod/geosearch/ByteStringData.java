@@ -5,8 +5,8 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.ushmax.IOUtils;
-import org.ushmax.NativeUtils;
+import org.nativeutils.IOUtils;
+import org.nativeutils.NativeUtils;
 
 import android.util.Log;
 
@@ -28,8 +28,8 @@ public class ByteStringData implements IStringData {
   public void initFromStream(InputStream stream) throws IOException {
     byte[] buffer = new byte[8];
     stream.read(buffer);
-    count = IOUtils.readIntLE(buffer, 0);
-    int totalChars = IOUtils.readIntLE(buffer, 4);
+    count = IOUtils.readIntBE(buffer, 0);
+    int totalChars = IOUtils.readIntBE(buffer, 4);
 
     charset = readCharset(stream);
     separator = char2byte('\n');
@@ -73,12 +73,12 @@ public class ByteStringData implements IStringData {
   private static char[] readCharset(InputStream stream) throws IOException {
     byte[] buffer = new byte[4];
     stream.read(buffer);
-    int charset_size = IOUtils.readIntLE(buffer, 0);
+    int charset_size = IOUtils.readIntBE(buffer, 0);
     Log.d(LOGTAG, "Custom charset has " + charset_size + " chars");
     char[] chars = new char[charset_size];
     buffer = new byte[2*charset_size];
     stream.read(buffer);
-    IOUtils.readCharArrayLE(buffer, 0, chars, charset_size);
+    IOUtils.readCharArrayBE(buffer, 0, chars, charset_size);
     return chars;
   }
 

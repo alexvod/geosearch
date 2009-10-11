@@ -1,4 +1,4 @@
-package org.ushmax;
+package org.nativeutils;
 
 import android.util.Log;
 
@@ -28,10 +28,12 @@ public class NativeUtils {
   private static native int nativeIndexOf(byte[] str, byte[] substr, int start);
   private static native void nativeReadIntArrayBE(byte[] buffer, int offset, int[] dst, int size);
   private static native void nativeReadIntArrayLE(byte[] buffer, int offset, int[] dst, int size);
+  private static native void nativeWriteIntArrayBE(int[] src, int start, int count, byte[] dst, int offset);
   private static native int nativeMakeSampledPosVector(byte[] content, int[] dst, byte separator, int sample);
   private static native int nativeGetMaxIntVectorDelta(int[] data);
   private static native void nativeReadCharArrayBE(byte[] buffer, int offset, char[] dst, int size);
   private static native void nativeReadCharArrayLE(byte[] buffer, int offset, char[] dst, int size);
+  private static native void nativeWriteCharArrayBE(char[] src, int start, int count, byte[] dst, int offset);
   private static native byte nativeGetMinByteArray(byte[] data);
   private static native byte nativeGetMaxByteArray(byte[] data);
 
@@ -60,6 +62,20 @@ public class NativeUtils {
     if (offset < 0) throw new ArrayIndexOutOfBoundsException();
     if (offset + (size << 2) > buffer.length) throw new ArrayIndexOutOfBoundsException();
     nativeReadIntArrayLE(buffer, offset, dst, size);
+  }
+  
+  public static void writeIntArrayBE(int[] src, int start, int count,
+      byte[] dst, int offset) {
+    if ((src == null) || (dst == null)) {
+      throw new NullPointerException();
+    }
+    if ((start < 0) || (count < 0) || (start + count > src.length)) {
+      throw new ArrayIndexOutOfBoundsException();      
+    }
+    if ((offset < 0) || (offset + count * 4 > dst.length)) {
+      throw new ArrayIndexOutOfBoundsException();      
+    }
+    NativeUtils.nativeWriteIntArrayBE(src, start, count, dst, offset);
   }
 
   public static void makeSampledPosVector(byte[] content, int[] dst, byte separator, int sample) {
@@ -92,6 +108,20 @@ public class NativeUtils {
     if (offset < 0) throw new ArrayIndexOutOfBoundsException();
     if (offset + (size << 1) > buffer.length) throw new ArrayIndexOutOfBoundsException();
     nativeReadCharArrayLE(buffer, offset, dst, size);
+  }
+
+  public static void writeCharArrayBE(char[] src, int start, int count,
+      byte[] dst, int offset) {
+    if ((src == null) || (dst == null)) {
+      throw new NullPointerException();
+    }
+    if ((start < 0) || (count < 0) || (start + count > src.length)) {
+      throw new ArrayIndexOutOfBoundsException();      
+    }
+    if ((offset < 0) || (offset + count * 2 > dst.length)) {
+      throw new ArrayIndexOutOfBoundsException();      
+    }
+    nativeWriteCharArrayBE(src, start, count, dst, offset);    
   }
 
   public static byte getMinByteArray(byte[] data) {

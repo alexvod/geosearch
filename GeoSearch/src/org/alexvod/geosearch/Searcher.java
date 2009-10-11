@@ -2,11 +2,10 @@ package org.alexvod.geosearch;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.ushmax.IOUtils;
+import org.nativeutils.IOUtils;
 
 import android.util.Log;
 
@@ -71,47 +70,36 @@ public class Searcher {
 
   private void loadData() {
     Log.d(LOGTAG, "Loading search data...");
-    String stringDataFile = "/sdcard/maps/string.dat";
     String indexDataFile = "/sdcard/maps/index.dat";
     try {
-      loadCoords(indexDataFile);
-      loadContent(stringDataFile);
+      FileInputStream stream = new FileInputStream(indexDataFile);
+      byte[] buffer = new byte[4];
+      stream.read(buffer);
+      count = IOUtils.readIntBE(buffer, 0);
+      Log.d(LOGTAG, "index file has " + count + " entries");
+      loadCoords(stream, count);
+      loadContent(stream);
+      stream.close();
     } catch (IOException f) {
       Log.e(LOGTAG, "Cannot read file");
     }
   }
 
-  private void loadContent(String stringDataFile) throws IOException {
-    FileInputStream stream = new FileInputStream(stringDataFile);
-    byte[] buffer = new byte[4];
-    stream.read(buffer);
-    int dataFormat = IOUtils.readIntLE(buffer, 0);
+  private void loadContent(FileInputStream stream) throws IOException {
     IStringData data = null; 
-    if (dataFormat == 1) {
-      data = new CharStringData();
-    } else if (dataFormat == 2) {
-      data = new ByteStringData();
-    } else {
-      Log.e(LOGTAG, "Unknown string file format " + dataFormat);
-      throw new RuntimeException();
-    }
+    data = new ByteStringData();
     data.initFromStream(stream);
-    stream.close();
     string_data = data;
   }
   
-  private void loadCoords(String indexDataFile) throws IOException {
-    InputStream stream = new FileInputStream(indexDataFile);
-    byte[] buffer = new byte[20];
-    stream.read(buffer, 0, 12);
-    count = IOUtils.readIntLE(buffer, 0);
-    Log.d(LOGTAG, "coord file has " + count + " entries");
-    min_lat = IOUtils.readIntLE(buffer, 4);
-    min_lng = IOUtils.readIntLE(buffer, 8);
+  private void loadCoords(FileInputStream stream, int count) throws IOException {
+    byte[] buffer = new byte[8];
+    stream.read(buffer, 0, 8);
+    min_lat = IOUtils.readIntBE(buffer, 0);
+    min_lng = IOUtils.readIntBE(buffer, 4);
     lat_vector = new byte[3 * count];
     lng_vector = new byte[3 * count];
     stream.read(lat_vector, 0, 3 * count);
     stream.read(lng_vector, 0, 3 * count);
-    stream.close();
   }
 }
