@@ -67,7 +67,7 @@ public class ByteStringData implements IStringData {
   }
 
   private char byte2char(byte b) {
-    return charset[b];
+    return charset[(int)b & 0xff];
   }
 
   private static char[] readCharset(InputStream stream) throws IOException {
