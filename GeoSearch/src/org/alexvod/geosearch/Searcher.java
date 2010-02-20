@@ -13,7 +13,7 @@ import android.util.Log;
 // loaded) collection of points.
 public class Searcher {
   private static final String LOGTAG = "GeoSearch_Searcher";
-  private final int RESULT_LIMIT = 100;
+  private final int RESULT_LIMIT = 200;
   private IStringData string_data;
   private int[] latVector;
   private int[] lngVector;
