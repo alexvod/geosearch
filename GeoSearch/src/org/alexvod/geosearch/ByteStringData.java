@@ -13,7 +13,7 @@ import android.util.Log;
 public class ByteStringData implements IStringData {
   private static final String LOGTAG = "GeoSearch_ByteStringData";
   private static final int POS_VECTOR_SAMPLING = 3;
-  private final int RESULT_LIMIT = 200;
+  private final int RESULT_LIMIT = 400;
   private byte[] content;
   private char[] charset;
   int count;
