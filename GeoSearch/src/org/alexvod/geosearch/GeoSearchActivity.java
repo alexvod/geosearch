@@ -2,11 +2,14 @@ package org.alexvod.geosearch;
 
 import java.util.List;
 
+import org.nativeutils.ByteArraySlice;
 import org.nativeutils.OutByteStream;
+import org.ushmax.mapviewer.MercatorReference;
 
 import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Point;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -78,7 +81,6 @@ public class GeoSearchActivity extends Activity {
     searchText.setText(lastSearchText);
   }
   
-  /*
   @Override
   public boolean onCreateOptionsMenu(Menu menu) {
     menu.add("Show on map").setOnMenuItemClickListener(new OnMenuItemClickListener() {
@@ -91,9 +93,31 @@ public class GeoSearchActivity extends Activity {
   }
     
   private void showResultsOnMap() {
-    OutByteStream outByteStream = new OutByteStream();
-    
-  }*/
+    Log.e(LOGTAG, "returning all results");
+    ByteArraySlice packedResult = getPackedResults();
+    Intent intent = getIntent();
+    intent.putExtra("org.alexvod.geosearch.ALL_RESULTS", packedResult.getCopy());
+    setResult(RESULT_OK, intent);
+    finish();
+  }
+  
+  private ByteArraySlice getPackedResults() {
+    OutByteStream out = new OutByteStream();
+    int size = searchResults.size();
+    out.writeIntBE(size);
+    Point point = new Point();
+    double[] latlng = new double[2];
+    for (int i = 0; i < size; ++i) {
+      searcher.getCoordsForResult(i, latlng);
+      MercatorReference.fromGeo((float)latlng[0], (float)latlng[1], 20, point);
+      out.writeIntBE(point.x);
+      out.writeIntBE(point.y);
+      out.writeString(searchResults.get(i));
+      out.writeString("");;
+      out.writeString("res.png");
+    }
+    return out.getResult();
+  }
 
   private void returnResult(String result, double[] latlng) {
     Log.e(LOGTAG, "returning result: " + result + "@" + latlng[0] + 

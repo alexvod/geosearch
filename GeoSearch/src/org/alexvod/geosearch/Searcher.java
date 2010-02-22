@@ -2,7 +2,7 @@ package org.alexvod.geosearch;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.LinkedList;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.nativeutils.IOUtils;
@@ -25,7 +25,7 @@ public class Searcher {
   }
   
   public List<String> search(String substring) {
-    List<String> result = new LinkedList<String>();
+    List<String> result = new ArrayList<String>();
     if (string_data == null) {
       result.add("-NO CONTENT LOADED-");
       return result;

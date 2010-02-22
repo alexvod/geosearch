@@ -131,4 +131,9 @@ public class OutByteStream {
   public void skipBytesUnchecked(int count) {
     mLength += count;
   }
+  
+  public void writeString(String s) {
+    writeIntBE(s.length());
+    writeCharArrayBE(s.toCharArray());
+  }
 }
