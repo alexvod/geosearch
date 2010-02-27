@@ -5,12 +5,15 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.nativeutils.IOUtils;
+import org.nativeutils.NativeUtils;
+
 import android.util.Log;
 
 public class ByteStringData implements IStringData {
   private static final String LOGTAG = "GeoSearch_ByteStringData";
   private static final int POS_VECTOR_SAMPLING = 3;
-  private final int RESULT_LIMIT = 100;
+  private final int RESULT_LIMIT = 400;
   private byte[] content;
   private char[] charset;
   int count;
@@ -22,21 +25,11 @@ public class ByteStringData implements IStringData {
     result_pos = new int[RESULT_LIMIT];
   }
 
-  private static int readInt(byte[] buffer, int offset) {
-    int t = 0;
-    for(int i = 3; i >= 0; --i) {
-      t <<= 8;
-      int b = buffer[offset+i];
-      t += b & 0xff;
-    }
-    return t; 
-  }
-
   public void initFromStream(InputStream stream) throws IOException {
     byte[] buffer = new byte[8];
     stream.read(buffer);
-    count = readInt(buffer, 0);
-    int totalChars = readInt(buffer, 4);
+    count = IOUtils.readIntBE(buffer, 0);
+    int totalChars = IOUtils.readIntBE(buffer, 4);
 
     charset = readCharset(stream);
     separator = char2byte('\n');
@@ -74,36 +67,27 @@ public class ByteStringData implements IStringData {
   }
 
   private char byte2char(byte b) {
-    return charset[b];
+    return charset[(int)b & 0xff];
   }
 
   private static char[] readCharset(InputStream stream) throws IOException {
     byte[] buffer = new byte[4];
     stream.read(buffer);
-    int charset_size = readInt(buffer, 0);
+    int charset_size = IOUtils.readIntBE(buffer, 0);
     Log.d(LOGTAG, "Custom charset has " + charset_size + " chars");
     char[] chars = new char[charset_size];
-    buffer = new byte[4*charset_size];
+    buffer = new byte[2*charset_size];
     stream.read(buffer);
-    for (int i = 0; i < charset_size; i++) {
-      chars[i] = (char)readInt(buffer, 4*i);
-    }
+    IOUtils.readCharArrayBE(buffer, 0, chars, charset_size);
     return chars;
   }
 
   private void makePosVector() {
+    long startTime = System.currentTimeMillis();
     pos_vector = new int[(count >> POS_VECTOR_SAMPLING) + 1];
-    pos_vector[0] = 0;
     byte separator = char2byte('\n');
-    int idx = 1;
-    final int sampling_mask = (1 << POS_VECTOR_SAMPLING) - 1; 
-    for (int i = 0; i < content.length; i++) {
-      if (content[i] != separator) continue;
-      if ((idx & sampling_mask) == 0) {
-        pos_vector[idx >> POS_VECTOR_SAMPLING] = i + 1;
-      }
-      idx++;
-    }
+    NativeUtils.makeSampledPosVector(content, pos_vector, separator, POS_VECTOR_SAMPLING);
+    Log.d(LOGTAG, "sample vector: " + (System.currentTimeMillis() - startTime) + "ms");
   }
 
   public int getPosForResultNum(int num) {
@@ -166,7 +150,12 @@ public class ByteStringData implements IStringData {
     int totalFound = 0;
     final int content_length = content.length;
     while (searchStart < content_length) {
-      int pos = searchSubstringForward(content, encoded, searchStart);
+      int pos = 0;
+      if (NativeUtils.nativeLibraryAvailable) {
+        pos = NativeUtils.indexOf(content, encoded, searchStart);
+      } else {
+        pos = searchSubstringForward(content, encoded, searchStart);
+      }
       if (pos == -1) break;
 
       // -1 + 1 = 0
