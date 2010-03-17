@@ -9,6 +9,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Point;
+import android.graphics.PointF;
 import android.os.Bundle;
 import android.os.Handler;
 import android.text.Editable;
@@ -110,7 +111,7 @@ public class GeoSearchActivity extends Activity {
   }
 
   private void updateResults(Results results) {
-    if (lastSearchText != results.query) {
+    if (results != null && lastSearchText != results.query) {
       // stale callback
       return;
     }
@@ -160,11 +161,9 @@ public class GeoSearchActivity extends Activity {
     OutByteStream out = new OutByteStream();
     int size = currentResults.titles.length;
     out.writeIntBE(size);
-    Point point = new Point();
     for (int i = 0; i < size; ++i) {
-      getCoords(i, point);
-      out.writeIntBE(point.x);
-      out.writeIntBE(point.y);
+      out.writeIntBE(currentResults.lats[i]);
+      out.writeIntBE(currentResults.lats[i]);
       out.writeString(currentResults.titles[i]);
       out.writeString("");
       out.writeString("res.png");
@@ -172,14 +171,14 @@ public class GeoSearchActivity extends Activity {
     return out.getResult();
   }
 
-  private void getCoords(int index, Point point) {
-    MercatorReference.fromGeo(
-            (float)currentResults.lats[index],
-            (float)currentResults.lngs[index], 20, point);
+  private void getCoords(int index, PointF point) {
+    MercatorReference.toGeo(
+            currentResults.lats[index],
+            currentResults.lngs[index], 20, point);
   }
 
   private void returnResult(int index) {
-    Point point = new Point();
+    PointF point = new PointF();
     getCoords(index, point);
     String title = currentResults.titles[index];
     Log.e(LOGTAG, "returning result: " + title + "@" + point.x + 

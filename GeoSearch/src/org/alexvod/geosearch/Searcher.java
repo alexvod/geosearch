@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.net.URLEncoder;
 
 import org.nativeutils.InByteStream;
 
@@ -13,8 +14,8 @@ import android.util.Log;
 // loaded) collection of points.
 public class Searcher {
   private static final String LOGTAG = "GeoSearch_Searcher";
-  private static final String URL_FORMAT = null;
-  private final int RESULT_LIMIT = 400;
+  private static final String URL_FORMAT = "http://syringa.org/search?q=%s&s=%d&n=%d";
+  private final int RESULT_LIMIT = 50;
   
   private Thread currentQuery = null;
 
@@ -33,20 +34,24 @@ public class Searcher {
   public void search(final String substring,
                      final int cont_handle,
                      final Callback callback) {
-    if (currentQuery != null) {
-      currentQuery.stop();
-      currentQuery = null;
-    }
     currentQuery = new Thread(new Runnable() {
       @Override
       public void run() {
         Log.d(LOGTAG, "searching for " + substring);
         long startTime = System.currentTimeMillis();
         Results results = querySynchronous(substring, cont_handle, RESULT_LIMIT);
-        Log.d(LOGTAG, "got " + results.titles.length + " results");
+        if (results == null) {
+          Log.d(LOGTAG, "got error");
+        } else {
+          Log.d(LOGTAG, "got " + results.titles.length + " results");
+        }
         long endTime = System.currentTimeMillis();
         Log.d(LOGTAG, "search for " + substring + " took " + (endTime - startTime) + "ms");
-        callback.gotResults(results);
+        if (Thread.currentThread() != currentQuery) {
+          Log.d(LOGTAG, "Preempted, not invoking callback");
+        } else {
+          callback.gotResults(results);
+        }
       }
     });
     currentQuery.start();
@@ -54,8 +59,8 @@ public class Searcher {
 
   private Results querySynchronous(String substring, int handle, int limit) {
     try {
-      // TODO:encode substring!!!
-      String url = String.format(URL_FORMAT, substring, handle);
+      String encoded = URLEncoder.encode(substring, "utf-8");
+      String url = String.format(URL_FORMAT, encoded, handle, limit);
       URL remote = new URL(url);
       InputStream inStream = remote.openStream();
       ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -72,15 +77,18 @@ public class Searcher {
       results.query = substring;
       return results;
     } catch (IOException e) {
+      Log.w(LOGTAG, e.toString());
       return null;
     }
   }
 
+  private char[] buffer = new char[8192];
   private Results parse(byte[] byteArray) {
     try {
       InByteStream ibs = new InByteStream(byteArray, 0, byteArray.length);
       int next = ibs.readIntBE();
       int num = ibs.readIntBE();
+      //Log.d(LOGTAG, "next=" + next + " num=" + num);
       Results results = new Results();
       results.titles = new String[num];
       results.lats = new int[num];
@@ -88,11 +96,21 @@ public class Searcher {
       for (int i = 0; i < num; ++i) {
         results.lats[i] = ibs.readIntBE();
         results.lngs[i] = ibs.readIntBE();
-        results.titles[i] = new String(ibs.readCharArrayWithLenBE());
+        int strlen = ibs.readIntBE();
+        char[] buf;
+        if (strlen > 8192) {
+          buf = new char[strlen];
+        } else {
+          buf = buffer;
+        }
+        int s = ibs.parseUtf8String(buf, strlen);
+        results.titles[i] = new String(buf, 0, s);
+        //Log.d(LOGTAG, "lat=" + results.lats[i] + " lng=" + results.lngs[i] + " title=" + results.titles[i]);
       }
       results.next_handle = next;
       return results;
     } catch (ArrayIndexOutOfBoundsException e) {
+      Log.w(LOGTAG, e.toString());
       return null;
     }
   }
