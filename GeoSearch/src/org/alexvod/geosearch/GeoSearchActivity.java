@@ -1,7 +1,5 @@
 package org.alexvod.geosearch;
 
-import java.util.List;
-
 import org.alexvod.geosearch.Searcher.Results;
 import org.nativeutils.ByteArraySlice;
 import org.nativeutils.OutByteStream;
@@ -24,6 +22,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.Toast;
 import android.widget.AdapterView.OnItemClickListener;
 
 public class GeoSearchActivity extends Activity {
@@ -34,6 +33,7 @@ public class GeoSearchActivity extends Activity {
   private ArrayAdapter<String> adapter;
   private ListView searchResultsList;
   private Handler handler;
+  private Results currentResults;
 
   /** Called when the activity is first created. */
   @Override
@@ -81,10 +81,14 @@ public class GeoSearchActivity extends Activity {
     searchResultsList.setOnItemClickListener(new OnItemClickListener() {
       public void onItemClick(AdapterView<?> parent, View view,
           int position, long id) {
-        String result = adapter.getItem(position);
-        double[] latlng = new double[2];
-        searcher.getCoordsForResult(position, latlng);
-        returnResult(result, latlng);
+        if (adapter.getCount() <= 1) {
+          return;
+        }
+        if (adapter.getCount() > 1 && position == adapter.getCount()-1) {
+          Toast.makeText(GeoSearchActivity.this,
+                  "Not implemented", Toast.LENGTH_SHORT);
+        }
+        returnResult(position);
       }
     });
 
@@ -94,9 +98,19 @@ public class GeoSearchActivity extends Activity {
   private void updateResults(Results results) {
     //searchResults = searcher.search(lastSearchText);
     adapter.clear();
-    for (String result : results.titles) {
-      adapter.add(result);
+    if (lastSearchText.length() == 0) {
+      adapter.add("- NOTHING TO SEARCH FOR -");
+    } else if (results == null) {
+      adapter.add("- ERROR -");
+    } else if (results.titles.length == 0) {
+      adapter.add("- NO RESULTS -");
+    } else {
+      for (String result : results.titles) {
+        adapter.add(result);
+      }
+      adapter.add("- GET MORE RESULTS -");
     }
+    currentResults = results;
     adapter.notifyDataSetChanged();
     adapter.notifyDataSetInvalidated();
   }
@@ -123,29 +137,36 @@ public class GeoSearchActivity extends Activity {
   
   private ByteArraySlice getPackedResults() {
     OutByteStream out = new OutByteStream();
-    int size = searchResults.size();
+    int size = currentResults.titles.length;
     out.writeIntBE(size);
     Point point = new Point();
-    double[] latlng = new double[2];
     for (int i = 0; i < size; ++i) {
-      searcher.getCoordsForResult(i, latlng);
-      MercatorReference.fromGeo((float)latlng[0], (float)latlng[1], 20, point);
+      getCoords(i, point);
       out.writeIntBE(point.x);
       out.writeIntBE(point.y);
-      out.writeString(searchResults.get(i));
-      out.writeString("");;
+      out.writeString(currentResults.titles[i]);
+      out.writeString("");
       out.writeString("res.png");
     }
     return out.getResult();
   }
 
-  private void returnResult(String result, double[] latlng) {
-    Log.e(LOGTAG, "returning result: " + result + "@" + latlng[0] + 
-        "," + latlng[1]);
+  private void getCoords(int index, Point point) {
+    MercatorReference.fromGeo(
+            (float)currentResults.lats[index],
+            (float)currentResults.lngs[index], 20, point);
+  }
+
+  private void returnResult(int index) {
+    Point point = new Point();
+    getCoords(index, point);
+    String title = currentResults.titles[index];
+    Log.e(LOGTAG, "returning result: " + title + "@" + point.x + 
+        "," + point.y);
     Intent intent = getIntent();
-    intent.putExtra("org.alexvod.geosearch.TITLE", result);
-    intent.putExtra("org.alexvod.geosearch.LAT", "" + latlng[0]);
-    intent.putExtra("org.alexvod.geosearch.LNG", "" + latlng[1]);
+    intent.putExtra("org.alexvod.geosearch.TITLE", title);
+    intent.putExtra("org.alexvod.geosearch.LAT", "" + point.x);
+    intent.putExtra("org.alexvod.geosearch.LNG", "" + point.y);
     setResult(RESULT_OK, intent);
     finish();
   }
