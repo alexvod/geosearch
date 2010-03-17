@@ -62,7 +62,7 @@ public class GeoSearchActivity extends Activity {
       public void onTextChanged(CharSequence s, int start, int before,
           int count) {
         lastSearchText = s.toString();
-        searcher.search(lastSearchText, new Searcher.Callback() {
+        searcher.search(lastSearchText, 0, new Searcher.Callback() {
           @Override
           public void gotResults(final Results results) {
             handler.post(new Runnable() {
@@ -85,10 +85,24 @@ public class GeoSearchActivity extends Activity {
           return;
         }
         if (adapter.getCount() > 1 && position == adapter.getCount()-1) {
-          Toast.makeText(GeoSearchActivity.this,
-                  "Not implemented", Toast.LENGTH_SHORT);
+          if (currentResults.next_handle != -1) {
+            searcher.search(currentResults.query,
+                            currentResults.next_handle,
+                            new Searcher.Callback() {
+              @Override
+              public void gotResults(final Results results) {
+                handler.post(new Runnable() {
+                  @Override
+                  public void run() {
+                    updateResults(results);
+                  }
+                });
+              }
+            });
+          }
+        } else {
+          returnResult(position);
         }
-        returnResult(position);
       }
     });
 
@@ -96,7 +110,10 @@ public class GeoSearchActivity extends Activity {
   }
 
   private void updateResults(Results results) {
-    //searchResults = searcher.search(lastSearchText);
+    if (lastSearchText != results.query) {
+      // stale callback
+      return;
+    }
     adapter.clear();
     if (lastSearchText.length() == 0) {
       adapter.add("- NOTHING TO SEARCH FOR -");
@@ -108,7 +125,11 @@ public class GeoSearchActivity extends Activity {
       for (String result : results.titles) {
         adapter.add(result);
       }
-      adapter.add("- GET MORE RESULTS -");
+      if (results.next_handle != -1) {
+        adapter.add("- GET MORE RESULTS -");
+      } else {
+        adapter.add("[END]");
+      }
     }
     currentResults = results;
     adapter.notifyDataSetChanged();

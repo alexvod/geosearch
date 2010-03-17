@@ -26,9 +26,13 @@ public class Searcher {
     public String[] titles;
     public int[] lats;
     public int[] lngs;
+    public int next_handle;  // -1 if eof
+    public String query;
   }
   
-  public void search(final String substring, final Callback callback) {
+  public void search(final String substring,
+                     final int cont_handle,
+                     final Callback callback) {
     if (currentQuery != null) {
       currentQuery.stop();
       currentQuery = null;
@@ -38,7 +42,7 @@ public class Searcher {
       public void run() {
         Log.d(LOGTAG, "searching for " + substring);
         long startTime = System.currentTimeMillis();
-        Results results = querySynchronous(substring, RESULT_LIMIT);
+        Results results = querySynchronous(substring, cont_handle, RESULT_LIMIT);
         Log.d(LOGTAG, "got " + results.titles.length + " results");
         long endTime = System.currentTimeMillis();
         Log.d(LOGTAG, "search for " + substring + " took " + (endTime - startTime) + "ms");
@@ -48,10 +52,10 @@ public class Searcher {
     currentQuery.start();
   }
 
-  private Results querySynchronous(String substring, int limit) {
+  private Results querySynchronous(String substring, int handle, int limit) {
     try {
       // TODO:encode substring!!!
-      String url = String.format(URL_FORMAT, substring);
+      String url = String.format(URL_FORMAT, substring, handle);
       URL remote = new URL(url);
       InputStream inStream = remote.openStream();
       ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -63,7 +67,10 @@ public class Searcher {
         outStream.write(buf, 0, numBytes);
       }
       inStream.close();
-      return parse(outStream.toByteArray());
+      Results results = parse(outStream.toByteArray());
+      if (results == null) return null;
+      results.query = substring;
+      return results;
     } catch (IOException e) {
       return null;
     }
@@ -71,19 +78,20 @@ public class Searcher {
 
   private Results parse(byte[] byteArray) {
     try {
-    InByteStream ibs = new InByteStream(byteArray, 0, byteArray.length);
-    ibs.readIntBE(); // next handle (TODO: use this)
-    int num = ibs.readIntBE();
-    Results results = new Results();
-    results.titles = new String[num];
-    results.lats = new int[num];
-    results.lngs = new int[num];
-    for (int i = 0; i < num; ++i) {
-      results.lats[i] = ibs.readIntBE(); 
-      results.lngs[i] = ibs.readIntBE();
-      results.titles[i] = new String(ibs.readCharArrayWithLenBE());
-    }
-    return results;
+      InByteStream ibs = new InByteStream(byteArray, 0, byteArray.length);
+      int next = ibs.readIntBE();
+      int num = ibs.readIntBE();
+      Results results = new Results();
+      results.titles = new String[num];
+      results.lats = new int[num];
+      results.lngs = new int[num];
+      for (int i = 0; i < num; ++i) {
+        results.lats[i] = ibs.readIntBE();
+        results.lngs[i] = ibs.readIntBE();
+        results.titles[i] = new String(ibs.readCharArrayWithLenBE());
+      }
+      results.next_handle = next;
+      return results;
     } catch (ArrayIndexOutOfBoundsException e) {
       return null;
     }
