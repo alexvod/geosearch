@@ -2,6 +2,7 @@ package org.alexvod.geosearch;
 
 import java.util.List;
 
+import org.alexvod.geosearch.Searcher.Results;
 import org.nativeutils.ByteArraySlice;
 import org.nativeutils.OutByteStream;
 import org.ushmax.mapviewer.MercatorReference;
@@ -11,6 +12,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Point;
 import android.os.Bundle;
+import android.os.Handler;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
@@ -29,7 +31,9 @@ public class GeoSearchActivity extends Activity {
   private static Searcher searcher;
   private String lastSearchText;
   private SharedPreferences mPrefs;
-  private List<String> searchResults;
+  private ArrayAdapter<String> adapter;
+  private ListView searchResultsList;
+  private Handler handler;
 
   /** Called when the activity is first created. */
   @Override
@@ -47,8 +51,10 @@ public class GeoSearchActivity extends Activity {
       Log.e(LOGTAG, "Using existing searcher");
     }
 
+    adapter = new ArrayAdapter<String>(this, R.layout.searchresult);
+    handler = new Handler();
+
     EditText searchText = (EditText)findViewById(R.id.SearchText);
-    final ArrayAdapter<String> adapter = new ArrayAdapter<String>(this, R.layout.searchresult);
     searchText.addTextChangedListener(new TextWatcher() {
       public void afterTextChanged(Editable s) { }
       public void beforeTextChanged(CharSequence s, int start, int count,
@@ -56,19 +62,23 @@ public class GeoSearchActivity extends Activity {
       public void onTextChanged(CharSequence s, int start, int before,
           int count) {
         lastSearchText = s.toString();
-        searchResults = searcher.search(lastSearchText);
-        adapter.clear();
-        for (String result : searchResults) {
-          adapter.add(result);
-        }
-        adapter.notifyDataSetChanged();
-        adapter.notifyDataSetInvalidated();
+        searcher.search(lastSearchText, new Searcher.Callback() {
+          @Override
+          public void gotResults(final Results results) {
+            handler.post(new Runnable() {
+              @Override
+              public void run() {
+                updateResults(results);
+              }
+            });
+          }
+        });
       }
     });
-    ListView searchResults = (ListView)findViewById(R.id.ResultList);
-    searchResults.setAdapter(adapter);
+    searchResultsList = (ListView)findViewById(R.id.ResultList);
+    searchResultsList.setAdapter(adapter);
 
-    searchResults.setOnItemClickListener(new OnItemClickListener() {
+    searchResultsList.setOnItemClickListener(new OnItemClickListener() {
       public void onItemClick(AdapterView<?> parent, View view,
           int position, long id) {
         String result = adapter.getItem(position);
@@ -80,7 +90,17 @@ public class GeoSearchActivity extends Activity {
 
     searchText.setText(lastSearchText);
   }
-  
+
+  private void updateResults(Results results) {
+    //searchResults = searcher.search(lastSearchText);
+    adapter.clear();
+    for (String result : results.titles) {
+      adapter.add(result);
+    }
+    adapter.notifyDataSetChanged();
+    adapter.notifyDataSetInvalidated();
+  }
+
   @Override
   public boolean onCreateOptionsMenu(Menu menu) {
     menu.add("Show on map").setOnMenuItemClickListener(new OnMenuItemClickListener() {

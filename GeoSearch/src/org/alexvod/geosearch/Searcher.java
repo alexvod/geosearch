@@ -14,7 +14,6 @@ import android.util.Log;
 public class Searcher {
   private static final String LOGTAG = "GeoSearch_Searcher";
   private final int RESULT_LIMIT = 400;
-  private IStringData string_data;
   private int[] latVector;
   private int[] lngVector;
 
@@ -24,27 +23,44 @@ public class Searcher {
     loadData();
   }
   
-  public List<String> search(String substring) {
+  public interface Callback {
+    public void gotResults(final Results results); // null if query failed
+  }
+  
+  public class Results {
+    public String[] titles;
+    public int[] lats;
+    public int[] lngs;
+  }
+  
+  public void search(final String substring, final Callback callback) {
+    Thread thread = new Thread(new Runnable() {
+      @Override
+      public void run() {
+        List<String> result = new ArrayList<String>();
+        Log.d(LOGTAG, "searching for " + substring);
+        if (substring.length() == 0) {
+          result.add("-NOTHING TO SEARCH-");
+          callback.gotResult(result);
+        }
+        long startTime = System.currentTimeMillis();
+        
+        result = querySynchronous(substring, RESULT_LIMIT);
+        
+        Log.d(LOGTAG, "got " + result.size() + " results");
+        if (result.size() == 0) {
+          result.add("-NOT FOUND-");
+        }
+        long endTime = System.currentTimeMillis();
+        Log.d(LOGTAG, "search for " + substring + " took " + (endTime - startTime) + "ms");
+        callback.gotResult(result);
+      }
+    });
+    thread.start();
+  }
+
+  private List<String> querySynchronous(String substring, int rESULTLIMIT) {
     List<String> result = new ArrayList<String>();
-    if (string_data == null) {
-      result.add("-NO CONTENT LOADED-");
-      return result;
-    }
-    Log.d(LOGTAG, "searching for " + substring);
-    if (substring.length() == 0) {
-      result.add("-NOTHING TO SEARCH-");
-      return result;
-    }
-    long startTime = System.currentTimeMillis();
-    
-    result = string_data.searchSubstring(substring, RESULT_LIMIT);
-    
-    if (result.size() == 0) {
-      result.add("-NOT FOUND-");
-    }
-    Log.d(LOGTAG, "got " + result.size() + " results");
-    long endTime = System.currentTimeMillis();
-    Log.d(LOGTAG, "search for " + substring + " took " + (endTime - startTime) + "ms");
     return result;
   }
 
