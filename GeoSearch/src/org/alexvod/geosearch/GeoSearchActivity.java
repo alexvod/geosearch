@@ -8,7 +8,6 @@ import org.ushmax.mapviewer.MercatorReference;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.Point;
 import android.graphics.PointF;
 import android.os.Bundle;
 import android.os.Handler;
@@ -23,7 +22,6 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ListView;
-import android.widget.Toast;
 import android.widget.AdapterView.OnItemClickListener;
 
 public class GeoSearchActivity extends Activity {
@@ -69,7 +67,7 @@ public class GeoSearchActivity extends Activity {
             handler.post(new Runnable() {
               @Override
               public void run() {
-                updateResults(results);
+                updateResults(results, false);
               }
             });
           }
@@ -95,7 +93,7 @@ public class GeoSearchActivity extends Activity {
                 handler.post(new Runnable() {
                   @Override
                   public void run() {
-                    updateResults(results);
+                    updateResults(results, true);
                   }
                 });
               }
@@ -110,12 +108,17 @@ public class GeoSearchActivity extends Activity {
     searchText.setText(lastSearchText);
   }
 
-  private void updateResults(Results results) {
+  private void updateResults(Results results, boolean addAtEnd) {
     if (results != null && lastSearchText != results.query) {
       // stale callback
       return;
     }
-    adapter.clear();
+    if (addAtEnd) {
+      // Remove the last (informational/active) element.
+      adapter.remove(adapter.getItem(adapter.getCount()-1));
+    } else {
+      adapter.clear();
+    }
     if (lastSearchText.length() == 0) {
       adapter.add("- NOTHING TO SEARCH FOR -");
     } else if (results == null) {
@@ -132,7 +135,29 @@ public class GeoSearchActivity extends Activity {
         adapter.add("[END]");
       }
     }
-    currentResults = results;
+    if (addAtEnd) {
+      int currentSize = currentResults.lats.length;
+      int resultsSize = results.lats.length;
+      // Append new data to currentResults.
+      int[] newlats = new int[currentSize + resultsSize];
+      System.arraycopy(currentResults.lats, 0, newlats, 0, currentSize);
+      System.arraycopy(results.lats, 0, newlats, currentSize, resultsSize);
+      currentResults.lats = newlats;
+
+      int[] newlngs = new int[currentSize + resultsSize];
+      System.arraycopy(currentResults.lngs, 0, newlngs, 0, currentSize);
+      System.arraycopy(results.lngs, 0, newlngs, currentSize, resultsSize);
+      currentResults.lngs = newlngs;
+
+      String[] newtitles = new String[currentSize + resultsSize];
+      System.arraycopy(currentResults.titles, 0, newtitles, 0, currentSize);
+      System.arraycopy(results.titles, 0, newtitles, currentSize, resultsSize);
+      currentResults.titles = newtitles;
+
+      currentResults.next_handle = results.next_handle;
+    } else {
+      currentResults = results;
+    }
     adapter.notifyDataSetChanged();
     adapter.notifyDataSetInvalidated();
   }
