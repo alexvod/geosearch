@@ -1,4 +1,4 @@
-package org.alexvod.geosearch;
+    package org.alexvod.geosearch;
 
 import java.io.IOException;
 import java.io.InputStream;
