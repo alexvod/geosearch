@@ -45,7 +45,7 @@ public class GeoSearchActivity extends Activity {
     // Create search on the first run
     if (searcher == null) {
       Log.e(LOGTAG, "Creating new Searcher");
-      searcher = new LocalSearcher();
+      searcher = new RemoteSearcher();
     } else {
       Log.e(LOGTAG, "Using existing searcher");
     }
