@@ -62,10 +62,8 @@ public class GeoSearchActivity extends Activity {
           int count) {
         lastSearchText = s.toString();
         searcher.search(lastSearchText, 0, new Searcher.Callback() {
-          @Override
           public void gotResults(final Results results) {
             handler.post(new Runnable() {
-              @Override
               public void run() {
                 updateResults(results, false);
               }
@@ -88,10 +86,8 @@ public class GeoSearchActivity extends Activity {
             searcher.search(currentResults.query,
                             currentResults.next_handle,
                             new Searcher.Callback() {
-              @Override
               public void gotResults(final Results results) {
                 handler.post(new Runnable() {
-                  @Override
                   public void run() {
                     updateResults(results, true);
                   }

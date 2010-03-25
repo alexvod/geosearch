@@ -1,4 +1,4 @@
-package org.alexvod.geosearch;
+  package org.alexvod.geosearch;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -35,7 +35,6 @@ public class Searcher {
                      final int cont_handle,
                      final Callback callback) {
     currentQuery = new Thread(new Runnable() {
-      @Override
       public void run() {
         Log.d(LOGTAG, "searching for " + substring);
         long startTime = System.currentTimeMillis();
