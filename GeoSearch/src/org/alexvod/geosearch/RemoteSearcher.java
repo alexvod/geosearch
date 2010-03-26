@@ -80,11 +80,11 @@ public class RemoteSearcher extends Searcher {
       //Log.d(LOGTAG, "next=" + next + " num=" + num);
       Results results = new Results();
       results.titles = new String[num];
-      results.lats = new int[num];
-      results.lngs = new int[num];
+      results.x = new int[num];
+      results.y = new int[num];
       for (int i = 0; i < num; ++i) {
-        results.lats[i] = ibs.readIntBE();
-        results.lngs[i] = ibs.readIntBE();
+        results.x[i] = ibs.readIntBE();
+        results.y[i] = ibs.readIntBE();
         int strlen = ibs.readIntBE();
         char[] buf;
         if (strlen > 8192) {

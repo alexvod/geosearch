@@ -158,18 +158,18 @@ public class GeoSearchActivity extends Activity {
       }
     }
     if (addAtEnd) {
-      int currentSize = currentResults.lats.length;
-      int resultsSize = results.lats.length;
+      int currentSize = currentResults.x.length;
+      int resultsSize = results.x.length;
       // Append new data to currentResults.
       int[] newlats = new int[currentSize + resultsSize];
-      System.arraycopy(currentResults.lats, 0, newlats, 0, currentSize);
-      System.arraycopy(results.lats, 0, newlats, currentSize, resultsSize);
-      currentResults.lats = newlats;
+      System.arraycopy(currentResults.x, 0, newlats, 0, currentSize);
+      System.arraycopy(results.x, 0, newlats, currentSize, resultsSize);
+      currentResults.x = newlats;
 
       int[] newlngs = new int[currentSize + resultsSize];
-      System.arraycopy(currentResults.lngs, 0, newlngs, 0, currentSize);
-      System.arraycopy(results.lngs, 0, newlngs, currentSize, resultsSize);
-      currentResults.lngs = newlngs;
+      System.arraycopy(currentResults.y, 0, newlngs, 0, currentSize);
+      System.arraycopy(results.y, 0, newlngs, currentSize, resultsSize);
+      currentResults.y = newlngs;
 
       String[] newtitles = new String[currentSize + resultsSize];
       System.arraycopy(currentResults.titles, 0, newtitles, 0, currentSize);
@@ -250,8 +250,8 @@ public class GeoSearchActivity extends Activity {
     int size = currentResults.titles.length;
     out.writeIntBE(size);
     for (int i = 0; i < size; ++i) {
-      out.writeIntBE(currentResults.lats[i]);
-      out.writeIntBE(currentResults.lngs[i]);
+      out.writeIntBE(currentResults.y[i]);
+      out.writeIntBE(currentResults.x[i]);
       out.writeString(currentResults.titles[i]);
       out.writeString("");
       out.writeString("res.png");
@@ -261,8 +261,8 @@ public class GeoSearchActivity extends Activity {
 
   private void getCoords(int index, PointF point) {
     MercatorReference.toGeo(
-        currentResults.lats[index],
-        currentResults.lngs[index], 20, point);
+        currentResults.y[index],
+        currentResults.x[index], 20, point);
   }
 
   private void returnResult(int index) {

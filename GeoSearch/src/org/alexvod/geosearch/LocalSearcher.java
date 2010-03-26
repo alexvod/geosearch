@@ -1,6 +1,6 @@
 package org.alexvod.geosearch;
 
-  import java.io.FileInputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.List;
 
@@ -15,20 +15,13 @@ public class LocalSearcher extends Searcher {
   private static final String LOGTAG = "GeoSearch_LocalSearcher";
   private final int RESULT_LIMIT = 400;
   private IStringData string_data;
-  private int[] latVector;
-  private int[] lngVector;
+  private int[] xcoord;
+  private int[] ycoord;
 
   private int count;
 
   public LocalSearcher() {
     loadData();
-  }
-
-  public void getCoordsForResult(int num, double latlng[]) {
-    int pos = string_data.getPosForResultNum(num); 
-    int idx = string_data.getIndex(pos);
-    latlng[0] = latVector[idx] * 1e-6;
-    latlng[1] = lngVector[idx] * 1e-6;
   }
 
   private void loadData() {
@@ -56,13 +49,13 @@ public class LocalSearcher extends Searcher {
   }
 
   private void loadCoords(FileInputStream stream, int count) throws IOException {
-    latVector = new int[count];
-    lngVector = new int[count];
+    xcoord = new int[count];
+    ycoord = new int[count];
     byte[] buffer = new byte[4 * count];
     stream.read(buffer);
-    IOUtils.readIntArrayBE(buffer, 0, latVector, count);
+    IOUtils.readIntArrayBE(buffer, 0, xcoord, count);
     stream.read(buffer);
-    IOUtils.readIntArrayBE(buffer, 0, lngVector, count);
+    IOUtils.readIntArrayBE(buffer, 0, ycoord, count);
   }
 
   @Override
@@ -72,14 +65,14 @@ public class LocalSearcher extends Searcher {
     List<String> list_result = string_data.searchSubstring(substring, RESULT_LIMIT);
     int num = list_result.size();
     results.titles = new String[num];
-    results.lats = new int[num];
-    results.lngs = new int[num];
+    results.x = new int[num];
+    results.y = new int[num];
     for (int i = 0; i < num; ++i) {
       int pos = string_data.getPosForResultNum(i); 
       int idx = string_data.getIndex(pos);
-      results.lats[i] = latVector[idx];
-      results.lngs[i] = lngVector[idx];
-      results.titles[i] =  list_result.get(i);
+      results.x[i] = xcoord[idx];
+      results.y[i] = ycoord[idx];
+      results.titles[i] = list_result.get(i);
     }
     results.next_handle = -1;
     results.query = substring;

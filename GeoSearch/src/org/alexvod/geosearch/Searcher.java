@@ -5,8 +5,8 @@ import android.content.SharedPreferences;
 public abstract class Searcher {
   public static class Results {
     public String[] titles;
-    public int[] lats;
-    public int[] lngs;
+    public int[] x;
+    public int[] y;
     public int next_handle;  // -1 if eof
     public String query;
   }
