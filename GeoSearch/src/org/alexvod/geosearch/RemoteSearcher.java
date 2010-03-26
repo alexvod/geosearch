@@ -1,4 +1,4 @@
-  package org.alexvod.geosearch;
+package org.alexvod.geosearch;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -8,15 +8,17 @@ import java.net.URLEncoder;
 
 import org.nativeutils.InByteStream;
 
+import android.content.SharedPreferences;
 import android.util.Log;
 
 // Class that search for string (entered by user) with in (a previously 
 // loaded) collection of points.
 public class RemoteSearcher extends Searcher {
   private static final String LOGTAG = "GeoSearch_Searcher";
-  private static final String URL_FORMAT = "http://syringa.org/search?q=%s&s=%d&n=%d";
+  private static String DEFAULT_URL_FORMAT = "http://syringa.org/search?q=%s&s=%d&n=%d";
   private final int RESULT_LIMIT = 50;
   
+  private String urlFormat;
   private Thread currentQuery = null;
   
   public void search(final String substring,
@@ -47,7 +49,7 @@ public class RemoteSearcher extends Searcher {
   private Results querySynchronous(String substring, int handle, int limit) {
     try {
       String encoded = URLEncoder.encode(substring, "utf-8");
-      String url = String.format(URL_FORMAT, encoded, handle, limit);
+      String url = String.format(urlFormat, encoded, handle, limit);
       URL remote = new URL(url);
       InputStream inStream = remote.openStream();
       ByteArrayOutputStream outStream = new ByteArrayOutputStream();
@@ -100,5 +102,15 @@ public class RemoteSearcher extends Searcher {
       Log.w(LOGTAG, e.toString());
       return null;
     }
+  }
+
+  @Override
+  public void loadPreferences(SharedPreferences mPrefs) {
+    if (!mPrefs.contains("remote_url_format")) {
+      SharedPreferences.Editor ed = mPrefs.edit();
+      ed.putString("remote_url_format", DEFAULT_URL_FORMAT);
+      ed.commit();
+    }
+    urlFormat = mPrefs.getString("remote_url_format", DEFAULT_URL_FORMAT);
   }
 }

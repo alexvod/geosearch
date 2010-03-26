@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen
+  xmlns:android="http://schemas.android.com/apk/res/android">
+<EditTextPreference android:title="Full-text search server" android:key="remote_url_format" android:summary="URL format of full-text search. Use %s, %d, %d for query, handle, count."></EditTextPreference>
+</PreferenceScreen>

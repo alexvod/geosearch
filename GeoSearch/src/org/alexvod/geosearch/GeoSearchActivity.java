@@ -11,6 +11,7 @@ import android.content.SharedPreferences;
 import android.graphics.PointF;
 import android.os.Bundle;
 import android.os.Handler;
+import android.preference.PreferenceManager;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
@@ -22,6 +23,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.Toast;
 import android.widget.AdapterView.OnItemClickListener;
 
 public class GeoSearchActivity extends Activity {
@@ -29,7 +31,7 @@ public class GeoSearchActivity extends Activity {
   private static final int SWITCH_MODE_MENU_ID = 1;
   private static Searcher searcher;
   private String lastSearchText;
-  private SharedPreferences mPrefs;
+  private SharedPreferences prefs;
   private ArrayAdapter<String> adapter;
   private ListView searchResultsList;
   private Handler handler;
@@ -40,9 +42,8 @@ public class GeoSearchActivity extends Activity {
   @Override
   public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
-    mPrefs = getPreferences(MODE_WORLD_WRITEABLE);
-    lastSearchText = mPrefs.getString("last_search_text", "");
-    searchMode = mPrefs.getString("search_mode", "remote");
+    prefs = PreferenceManager.getDefaultSharedPreferences(this);
+    loadPreferences();
     setContentView(R.layout.main);
 
     // Create search on the first run
@@ -51,6 +52,7 @@ public class GeoSearchActivity extends Activity {
     } else {
       Log.e(LOGTAG, "Using existing searcher");
     }
+    searcher.loadPreferences(prefs);
 
     adapter = new ArrayAdapter<String>(this, R.layout.searchresult);
     handler = new Handler();
@@ -106,13 +108,21 @@ public class GeoSearchActivity extends Activity {
     searchText.setText(lastSearchText);
   }
 
+  private void loadPreferences() {
+    lastSearchText = prefs.getString("last_search_text", "");
+    searchMode = prefs.getString("search_mode", "remote");
+    if (searcher != null) {
+      searcher.loadPreferences(prefs);
+    }
+  }
+
   private void createSearcher() {
-    if (searchMode == "remote") {
+    if (searchMode.equals("remote")) {
       Log.e(LOGTAG, "Creating new RemoteSearcher");
       searcher = new RemoteSearcher();
       return;
     }
-    if (searchMode == "local") {
+    if (searchMode.equals("local")) {
       Log.e(LOGTAG, "Creating new LocalSearcher");
       searcher = new LocalSearcher();
       return;
@@ -182,9 +192,20 @@ public class GeoSearchActivity extends Activity {
         return true;
       }  
     });
+    menu.add("Settings").setOnMenuItemClickListener(new OnMenuItemClickListener() {
+      public boolean onMenuItemClick(MenuItem item) {
+        showSettingsDialog();
+        return true;
+      }  
+    });
     return true;
   }
   
+  protected void showSettingsDialog() {
+    Intent settingsActivity = new Intent(getBaseContext(), SettingsActivity.class );
+    startActivity(settingsActivity);
+  }
+
   @Override
   public boolean onPrepareOptionsMenu(Menu menu) {
     final String otherMode = getNextModeName();
@@ -194,6 +215,7 @@ public class GeoSearchActivity extends Activity {
       public boolean onMenuItemClick(MenuItem item) {
         searchMode = otherMode;
         createSearcher();
+        searcher.loadPreferences(prefs);
         return true;
       }  
     });
@@ -202,15 +224,19 @@ public class GeoSearchActivity extends Activity {
 
   private String getNextModeName() {
     // Get name for alternative mode.
-    if (searchMode == "local") {
+    if (searchMode.equals("local")) {
       return "remote";
-    } else if (searchMode == "remote") {
+    } else if (searchMode.equals("remote")) {
       return "local";
     }
     throw new RuntimeException("Unsupported search mode " + searchMode);
   }
 
   private void showResultsOnMap() {
+    if (currentResults == null) {
+      Toast.makeText(this, "No results to show", Toast.LENGTH_SHORT).show();
+      return;
+    } 
     Log.e(LOGTAG, "returning all results");
     ByteArraySlice packedResult = getPackedResults();
     Intent intent = getIntent();
@@ -252,11 +278,11 @@ public class GeoSearchActivity extends Activity {
     setResult(RESULT_OK, intent);
     finish();
   }
-
+  
   protected void onPause() {
     super.onPause();
 
-    SharedPreferences.Editor ed = mPrefs.edit();
+    SharedPreferences.Editor ed = prefs.edit();
     ed.putString("last_search_text", lastSearchText);
     ed.putString("last_search_pos", lastSearchText);
     ed.putString("search_mode", searchMode);

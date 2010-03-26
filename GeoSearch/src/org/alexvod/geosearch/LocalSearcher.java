@@ -6,6 +6,7 @@ import java.util.List;
 
 import org.nativeutils.IOUtils;
 
+import android.content.SharedPreferences;
 import android.util.Log;
 
 // Class that search for string (entered by user) with in (a previously 
@@ -86,5 +87,10 @@ public class LocalSearcher extends Searcher {
     long endTime = System.currentTimeMillis();
     Log.d(LOGTAG, "search for " + substring + " took " + (endTime - startTime) + "ms");
     callback.gotResults(results);
+  }
+
+  @Override
+  public void loadPreferences(SharedPreferences mPrefs) {
+    // TODO: implement preferences.
   }
 }
