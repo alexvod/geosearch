@@ -26,6 +26,7 @@ import android.widget.AdapterView.OnItemClickListener;
 
 public class GeoSearchActivity extends Activity {
   private static final String LOGTAG = "GeoSearch_GeoSearchActivity";
+  private static final int SWITCH_MODE_MENU_ID = 1;
   private static Searcher searcher;
   private String lastSearchText;
   private SharedPreferences mPrefs;
@@ -33,6 +34,7 @@ public class GeoSearchActivity extends Activity {
   private ListView searchResultsList;
   private Handler handler;
   private Results currentResults;
+  private String searchMode;
 
   /** Called when the activity is first created. */
   @Override
@@ -40,12 +42,12 @@ public class GeoSearchActivity extends Activity {
     super.onCreate(savedInstanceState);
     mPrefs = getPreferences(MODE_WORLD_WRITEABLE);
     lastSearchText = mPrefs.getString("last_search_text", "");
+    searchMode = mPrefs.getString("search_mode", "remote");
     setContentView(R.layout.main);
 
     // Create search on the first run
     if (searcher == null) {
-      Log.e(LOGTAG, "Creating new Searcher");
-      searcher = new RemoteSearcher();
+      createSearcher();
     } else {
       Log.e(LOGTAG, "Using existing searcher");
     }
@@ -84,8 +86,8 @@ public class GeoSearchActivity extends Activity {
         if (adapter.getCount() > 1 && position == adapter.getCount()-1) {
           if (currentResults.next_handle != -1) {
             searcher.search(currentResults.query,
-                            currentResults.next_handle,
-                            new Searcher.Callback() {
+                currentResults.next_handle,
+                new Searcher.Callback() {
               public void gotResults(final Results results) {
                 handler.post(new Runnable() {
                   public void run() {
@@ -102,6 +104,20 @@ public class GeoSearchActivity extends Activity {
     });
 
     searchText.setText(lastSearchText);
+  }
+
+  private void createSearcher() {
+    if (searchMode == "remote") {
+      Log.e(LOGTAG, "Creating new RemoteSearcher");
+      searcher = new RemoteSearcher();
+      return;
+    }
+    if (searchMode == "local") {
+      Log.e(LOGTAG, "Creating new LocalSearcher");
+      searcher = new LocalSearcher();
+      return;
+    }
+    throw new RuntimeException("Unknown search mode " + searchMode);
   }
 
   private void updateResults(Results results, boolean addAtEnd) {
@@ -168,7 +184,32 @@ public class GeoSearchActivity extends Activity {
     });
     return true;
   }
-    
+  
+  @Override
+  public boolean onPrepareOptionsMenu(Menu menu) {
+    final String otherMode = getNextModeName();
+    menu.removeItem(SWITCH_MODE_MENU_ID);
+    menu.add(Menu.NONE, SWITCH_MODE_MENU_ID, Menu.  NONE,
+        "Switch to " + otherMode).setOnMenuItemClickListener(new OnMenuItemClickListener() {
+      public boolean onMenuItemClick(MenuItem item) {
+        searchMode = otherMode;
+        createSearcher();
+        return true;
+      }  
+    });
+    return true;
+  }
+
+  private String getNextModeName() {
+    // Get name for alternative mode.
+    if (searchMode == "local") {
+      return "remote";
+    } else if (searchMode == "remote") {
+      return "local";
+    }
+    throw new RuntimeException("Unsupported search mode " + searchMode);
+  }
+
   private void showResultsOnMap() {
     Log.e(LOGTAG, "returning all results");
     ByteArraySlice packedResult = getPackedResults();
@@ -177,14 +218,14 @@ public class GeoSearchActivity extends Activity {
     setResult(RESULT_OK, intent);
     finish();
   }
-  
+
   private ByteArraySlice getPackedResults() {
     OutByteStream out = new OutByteStream();
     int size = currentResults.titles.length;
     out.writeIntBE(size);
     for (int i = 0; i < size; ++i) {
       out.writeIntBE(currentResults.lats[i]);
-      out.writeIntBE(currentResults.lats[i]);
+      out.writeIntBE(currentResults.lngs[i]);
       out.writeString(currentResults.titles[i]);
       out.writeString("");
       out.writeString("res.png");
@@ -194,8 +235,8 @@ public class GeoSearchActivity extends Activity {
 
   private void getCoords(int index, PointF point) {
     MercatorReference.toGeo(
-            currentResults.lats[index],
-            currentResults.lngs[index], 20, point);
+        currentResults.lats[index],
+        currentResults.lngs[index], 20, point);
   }
 
   private void returnResult(int index) {
@@ -218,6 +259,7 @@ public class GeoSearchActivity extends Activity {
     SharedPreferences.Editor ed = mPrefs.edit();
     ed.putString("last_search_text", lastSearchText);
     ed.putString("last_search_pos", lastSearchText);
+    ed.putString("search_mode", searchMode);
     ed.commit();
   }
 }
