@@ -89,17 +89,7 @@ public class LocalSearcher extends Searcher {
 
   @Override
   public void loadPreferences(SharedPreferences prefs) {
-    if (!prefs.contains(PREF_RESULT_COUNT)) {
-      SharedPreferences.Editor ed = prefs.edit();
-      ed.putString(PREF_RESULT_COUNT, "" + DEFAULT_RESULT_COUNT);
-      ed.commit();
-    }
-    resultCount = 0;
-    try {
-      resultCount = Integer.parseInt(prefs.getString(PREF_RESULT_COUNT, "0"));
-    } catch (NumberFormatException e) {
-      // Do nothing.
-    }
+    resultCount = SettingsHelper.getIntPref(prefs, PREF_RESULT_COUNT, DEFAULT_RESULT_COUNT);
     if (resultCount < 1 || resultCount > 1000) {
       resultCount = DEFAULT_RESULT_COUNT;
     }
