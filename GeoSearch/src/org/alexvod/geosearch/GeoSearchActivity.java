@@ -27,6 +27,7 @@ import android.widget.AdapterView.OnItemClickListener;
 public class GeoSearchActivity extends Activity {
   private static final String LOGTAG = "GeoSearch_GeoSearchActivity";
   private static final int SWITCH_MODE_MENU_ID = 1;
+  private static final int SETTINGS_ACTIVITY = 1;
   private static Searcher searcher;
   private String lastSearchText;
   private SharedPreferences prefs;
@@ -63,15 +64,7 @@ public class GeoSearchActivity extends Activity {
       public void onTextChanged(CharSequence s, int start, int before,
           int count) {
         lastSearchText = s.toString();
-        searcher.search(lastSearchText, 0, new Searcher.Callback() {
-          public void gotResults(final Results results) {
-            handler.post(new Runnable() {
-              public void run() {
-                updateResults(results, false);
-              }
-            });
-          }
-        });
+        doSearch();
       }
     });
     searchResultsList = (ListView)findViewById(R.id.ResultList);
@@ -104,6 +97,18 @@ public class GeoSearchActivity extends Activity {
     });
 
     searchText.setText(lastSearchText);
+  }
+
+  private void doSearch() {
+    searcher.search(lastSearchText, 0, new Searcher.Callback() {
+      public void gotResults(final Results results) {
+        handler.post(new Runnable() {
+          public void run() {
+            updateResults(results, false);
+          }
+        });
+      }
+    });
   }
 
   private void loadPreferences() {
@@ -198,10 +203,18 @@ public class GeoSearchActivity extends Activity {
     });
     return true;
   }
-  
+
   protected void showSettingsDialog() {
-    Intent settingsActivity = new Intent(getBaseContext(), SettingsActivity.class );
-    startActivity(settingsActivity);
+    Intent settingsIntent = new Intent(getBaseContext(), SettingsActivity.class );
+    startActivityForResult(settingsIntent, SETTINGS_ACTIVITY);
+  }
+
+  @Override
+  protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+    if (requestCode == SETTINGS_ACTIVITY) {
+      loadPreferences();
+      doSearch();
+    }
   }
 
   @Override
@@ -210,13 +223,13 @@ public class GeoSearchActivity extends Activity {
     menu.removeItem(SWITCH_MODE_MENU_ID);
     menu.add(Menu.NONE, SWITCH_MODE_MENU_ID, Menu.  NONE,
         "Switch to " + otherMode).setOnMenuItemClickListener(new OnMenuItemClickListener() {
-      public boolean onMenuItemClick(MenuItem item) {
-        searchMode = otherMode;
-        createSearcher();
-        searcher.loadPreferences(prefs);
-        return true;
-      }  
-    });
+          public boolean onMenuItemClick(MenuItem item) {
+            searchMode = otherMode;
+            createSearcher();
+            searcher.loadPreferences(prefs);
+            return true;
+          }  
+        });
     return true;
   }
 
@@ -269,7 +282,7 @@ public class GeoSearchActivity extends Activity {
     setResult(RESULT_OK, intent);
     finish();
   }
-  
+
   protected void onPause() {
     super.onPause();
 
