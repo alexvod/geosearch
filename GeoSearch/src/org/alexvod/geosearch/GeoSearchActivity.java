@@ -227,6 +227,7 @@ public class GeoSearchActivity extends Activity {
             searchMode = otherMode;
             createSearcher();
             searcher.loadPreferences(prefs);
+            doSearch();
             return true;
           }  
         });
