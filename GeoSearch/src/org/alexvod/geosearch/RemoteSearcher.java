@@ -83,8 +83,8 @@ public class RemoteSearcher extends Searcher {
       results.x = new int[num];
       results.y = new int[num];
       for (int i = 0; i < num; ++i) {
-        results.x[i] = ibs.readIntBE();
         results.y[i] = ibs.readIntBE();
+        results.x[i] = ibs.readIntBE();
         int strlen = ibs.readIntBE();
         char[] buf;
         if (strlen > 8192) {

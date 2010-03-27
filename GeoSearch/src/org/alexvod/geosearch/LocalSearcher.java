@@ -53,9 +53,9 @@ public class LocalSearcher extends Searcher {
     ycoord = new int[count];
     byte[] buffer = new byte[4 * count];
     stream.read(buffer);
-    IOUtils.readIntArrayBE(buffer, 0, xcoord, count);
-    stream.read(buffer);
     IOUtils.readIntArrayBE(buffer, 0, ycoord, count);
+    stream.read(buffer);
+    IOUtils.readIntArrayBE(buffer, 0, xcoord, count);
   }
 
   @Override

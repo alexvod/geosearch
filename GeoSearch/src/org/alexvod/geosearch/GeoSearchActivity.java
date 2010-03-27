@@ -3,12 +3,10 @@ package org.alexvod.geosearch;
 import org.alexvod.geosearch.Searcher.Results;
 import org.nativeutils.ByteArraySlice;
 import org.nativeutils.OutByteStream;
-import org.ushmax.mapviewer.MercatorReference;
 
 import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.graphics.PointF;
 import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
@@ -250,8 +248,8 @@ public class GeoSearchActivity extends Activity {
     int size = currentResults.titles.length;
     out.writeIntBE(size);
     for (int i = 0; i < size; ++i) {
-      out.writeIntBE(currentResults.y[i]);
       out.writeIntBE(currentResults.x[i]);
+      out.writeIntBE(currentResults.y[i]);
       out.writeString(currentResults.titles[i]);
       out.writeString("");
       out.writeString("res.png");
@@ -259,22 +257,15 @@ public class GeoSearchActivity extends Activity {
     return out.getResult();
   }
 
-  private void getCoords(int index, PointF point) {
-    MercatorReference.toGeo(
-        currentResults.y[index],
-        currentResults.x[index], 20, point);
-  }
-
   private void returnResult(int index) {
-    PointF point = new PointF();
-    getCoords(index, point);
     String title = currentResults.titles[index];
-    Log.e(LOGTAG, "returning result: " + title + "@" + point.x + 
-        "," + point.y);
+    int x = currentResults.x[index];
+    int y = currentResults.y[index];
+    Log.e(LOGTAG, "returning result: " + title + "@" + x + "," + y);
     Intent intent = getIntent();
     intent.putExtra("org.alexvod.geosearch.TITLE", title);
-    intent.putExtra("org.alexvod.geosearch.LAT", "" + point.x);
-    intent.putExtra("org.alexvod.geosearch.LNG", "" + point.y);
+    intent.putExtra("org.alexvod.geosearch.XCOORD", "" + x);
+    intent.putExtra("org.alexvod.geosearch.YCOORD", "" + y);
     setResult(RESULT_OK, intent);
     finish();
   }
