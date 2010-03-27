@@ -1,9 +1,8 @@
-    package org.alexvod.geosearch;
+package org.alexvod.geosearch;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.List;
 
 import org.nativeutils.IOUtils;
 import org.nativeutils.NativeUtils;
@@ -135,43 +134,48 @@ public class ByteStringData implements IStringData {
     return true;
   }
 
-  public List<String> searchSubstring(String s, int max_results) {
+  public int searchSubstring(String s, int next_handle, int max_results, ArrayList<String> output) {
     result_pos = new int[max_results];
-    ArrayList<String> result = new ArrayList<String>();
-    result.ensureCapacity(max_results);
     final int str_length = s.length();
-    if (str_length == 0) return result;
+    if (str_length == 0) {
+      return -1;
+    }
     byte[] encoded = new byte[str_length];
     if (!decodeString(s, encoded)) {
       Log.d(LOGTAG, "cannot decode string");
-      return result;
+      return -1;
     }
-    int searchStart = 0;
+    if (next_handle < 0 || next_handle > content.length) {
+      throw new RuntimeException("Wrong next_handle for LocalSearch: " + next_handle);
+    }
+    int searchStart = next_handle;
     int totalFound = 0;
-    final int content_length = content.length;
-    while (searchStart < content_length) {
+    final int contentLength = content.length;
+    while (searchStart < contentLength) {
       int pos = 0;
-      if (NativeUtils.nativeLibraryAvailable) {
-        pos = NativeUtils.indexOf(content, encoded, searchStart);
-      } else {
-        pos = searchSubstringForward(content, encoded, searchStart);
+      pos = NativeUtils.indexOf(content, encoded, searchStart);
+      if (pos == -1) {
+        searchStart = contentLength;
+        break;
       }
-      if (pos == -1) break;
 
       // -1 + 1 = 0
       int start = searchCharBackward(content, separator, pos) + 1;
       int end = searchCharForward(content, separator, start + 1);
-      if (end == -1) end = content_length;
-      result.add(getSubstring(start, end));
+      if (end == -1) end = contentLength;
+      output.add(getSubstring(start, end));
       result_pos[totalFound] = start;
       totalFound++;
+      searchStart = end + 1;
       if (totalFound >= max_results) {
         Log.d(LOGTAG, "got " + totalFound + " results, truncated");
         break;
       }
-      searchStart = end + 1;
     }
-    return result; 
+    if (searchStart >= contentLength) {
+      return -1;
+    }
+    return searchStart; 
   }
 
   static private int searchCharBackward(byte[] content, byte b, int start) {
@@ -187,25 +191,6 @@ public class ByteStringData implements IStringData {
     final int length = content.length;
     for (int i = start; i < length; ++i) {
       if (content[i] == b) {
-        return i;
-      }
-    }
-    return -1;
-  }
-
-  static private int searchSubstringForward(byte[] text, byte[] substr,
-      int start) {
-    final byte firstByte = substr[0];
-    final int subLen = substr.length;
-    final int len = text.length - subLen;
-    // Search for the first byte of substr.
-    for (int i = start; i <= len; ++i) {
-      if (text[i] != firstByte) continue;
-      int i1 = i, i2 = 0;
-      while (++i2 < subLen && text[++i1] == substr[i2]) {
-        // Intentionally empty
-      }
-      if (i2 == subLen) {
         return i;
       }
     }

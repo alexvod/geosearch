@@ -2,7 +2,7 @@ package org.alexvod.geosearch;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.List;
+import java.util.ArrayList;
 
 import org.nativeutils.IOUtils;
 
@@ -61,11 +61,14 @@ public class LocalSearcher extends Searcher {
   }
 
   @Override
-  public void search(String substring, int next_handle, Callback callback) {
-          long startTime = System.currentTimeMillis();
+  public void search(String substring, int start, Callback callback) {
+    long startTime = System.currentTimeMillis();
     Results results = new Results();
-    List<String> list_result = string_data.searchSubstring(substring, resultCount);
-    int num = list_result.size();
+    // TODO: this is dirty hack, rewrite it
+    ArrayList<String> searchResults = new ArrayList<String>();
+    searchResults.ensureCapacity(resultCount);
+    int next_handle = string_data.searchSubstring(substring, start, resultCount, searchResults);
+    int num = searchResults.size();
     results.titles = new String[num];
     results.x = new int[num];
     results.y = new int[num];
@@ -74,9 +77,9 @@ public class LocalSearcher extends Searcher {
       int idx = string_data.getIndex(pos);
       results.x[i] = xcoord[idx];
       results.y[i] = ycoord[idx];
-      results.titles[i] = list_result.get(i);
+      results.titles[i] = searchResults.get(i);
     }
-    results.next_handle = -1;
+    results.next_handle = next_handle;
     results.query = substring;
     Log.d(LOGTAG, "got " + num + " results");
     long endTime = System.currentTimeMillis();
