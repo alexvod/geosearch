@@ -13,7 +13,6 @@ import android.util.Log;
 public class ByteStringData implements IStringData {
   private static final String LOGTAG = "GeoSearch_ByteStringData";
   private static final int POS_VECTOR_SAMPLING = 3;
-  private final int RESULT_LIMIT = 400;
   private byte[] content;
   private char[] charset;
   int count;
@@ -22,7 +21,6 @@ public class ByteStringData implements IStringData {
   private byte separator;
 
   public ByteStringData() {
-    result_pos = new int[RESULT_LIMIT];
   }
 
   public void initFromStream(InputStream stream) throws IOException {
@@ -138,7 +136,9 @@ public class ByteStringData implements IStringData {
   }
 
   public List<String> searchSubstring(String s, int max_results) {
-    List<String> result = new ArrayList<String>();
+    result_pos = new int[max_results];
+    ArrayList<String> result = new ArrayList<String>();
+    result.ensureCapacity(max_results);
     final int str_length = s.length();
     if (str_length == 0) return result;
     byte[] encoded = new byte[str_length];

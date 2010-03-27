@@ -2,4 +2,6 @@
 <PreferenceScreen
   xmlns:android="http://schemas.android.com/apk/res/android">
 <EditTextPreference android:title="Full-text search server" android:key="remote_url_format" android:summary="URL format of full-text search. Use %s, %d, %d for query, handle, count."></EditTextPreference>
+<EditTextPreference android:summary="Number of search results for local search" android:key="local_result_count" android:title="Number of local results"></EditTextPreference>
+<EditTextPreference android:key="remote_result_count" android:title="Number of remote results" android:summary="Number of search results from remote server"></EditTextPreference>
 </PreferenceScreen>

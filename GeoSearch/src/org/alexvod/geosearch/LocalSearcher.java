@@ -13,8 +13,10 @@ import android.util.Log;
 // loaded) collection of points.
 public class LocalSearcher extends Searcher {
   private static final String LOGTAG = "GeoSearch_LocalSearcher";
-  private final int RESULT_LIMIT = 400;
+  private static final String PREF_RESULT_COUNT = "local_result_count";
+  private static final int DEFAULT_RESULT_COUNT = 400;
   private IStringData string_data;
+  private int resultCount;
   private int[] xcoord;
   private int[] ycoord;
 
@@ -62,7 +64,7 @@ public class LocalSearcher extends Searcher {
   public void search(String substring, int next_handle, Callback callback) {
           long startTime = System.currentTimeMillis();
     Results results = new Results();
-    List<String> list_result = string_data.searchSubstring(substring, RESULT_LIMIT);
+    List<String> list_result = string_data.searchSubstring(substring, resultCount);
     int num = list_result.size();
     results.titles = new String[num];
     results.x = new int[num];
@@ -83,7 +85,20 @@ public class LocalSearcher extends Searcher {
   }
 
   @Override
-  public void loadPreferences(SharedPreferences mPrefs) {
-    // TODO: implement preferences.
+  public void loadPreferences(SharedPreferences prefs) {
+    if (!prefs.contains(PREF_RESULT_COUNT)) {
+      SharedPreferences.Editor ed = prefs.edit();
+      ed.putString(PREF_RESULT_COUNT, "" + DEFAULT_RESULT_COUNT);
+      ed.commit();
+    }
+    resultCount = 0;
+    try {
+      resultCount = Integer.parseInt(prefs.getString(PREF_RESULT_COUNT, "0"));
+    } catch (NumberFormatException e) {
+      // Do nothing.
+    }
+    if (resultCount < 1 || resultCount > 1000) {
+      resultCount = DEFAULT_RESULT_COUNT;
+    }
   }
 }

@@ -15,20 +15,23 @@ import android.util.Log;
 // loaded) collection of points.
 public class RemoteSearcher extends Searcher {
   private static final String LOGTAG = "GeoSearch_Searcher";
+  private static final String PREF_URL_FORMAT= "remote_url_format";
   private static String DEFAULT_URL_FORMAT = "http://syringa.org/search?q=%s&s=%d&n=%d";
-  private final int RESULT_LIMIT = 50;
+  private static final String PREF_RESULT_COUNT = "remote_result_count";
+  private static final int DEFAULT_RESULT_COUNT = 100;
   
+  private int resultCount;
   private String urlFormat;
   private Thread currentQuery = null;
-  
+
   public void search(final String substring,
-                     final int cont_handle,
-                     final Callback callback) {
+      final int cont_handle,
+      final Callback callback) {
     currentQuery = new Thread(new Runnable() {
       public void run() {
         Log.d(LOGTAG, "searching for " + substring);
         long startTime = System.currentTimeMillis();
-        Results results = querySynchronous(substring, cont_handle, RESULT_LIMIT);
+        Results results = querySynchronous(substring, cont_handle, resultCount);
         if (results == null) {
           Log.d(LOGTAG, "got error");
         } else {
@@ -105,12 +108,26 @@ public class RemoteSearcher extends Searcher {
   }
 
   @Override
-  public void loadPreferences(SharedPreferences mPrefs) {
-    if (!mPrefs.contains("remote_url_format")) {
-      SharedPreferences.Editor ed = mPrefs.edit();
-      ed.putString("remote_url_format", DEFAULT_URL_FORMAT);
+  public void loadPreferences(SharedPreferences prefs) {
+    if (!prefs.contains(PREF_URL_FORMAT)) {
+      SharedPreferences.Editor ed = prefs.edit();
+      ed.putString(PREF_URL_FORMAT, DEFAULT_URL_FORMAT);
       ed.commit();
     }
-    urlFormat = mPrefs.getString("remote_url_format", DEFAULT_URL_FORMAT);
+    urlFormat = prefs.getString(PREF_URL_FORMAT, DEFAULT_URL_FORMAT);
+    if (!prefs.contains(PREF_RESULT_COUNT)) {
+      SharedPreferences.Editor ed = prefs.edit();
+      ed.putString(PREF_RESULT_COUNT, "" + DEFAULT_RESULT_COUNT);
+      ed.commit();
+    }
+    resultCount = 0;
+    try {
+      resultCount = Integer.parseInt(prefs.getString(PREF_RESULT_COUNT, "0"));
+    } catch (NumberFormatException e) {
+      // Do nothing.
+    }
+    if (resultCount < 1 || resultCount > 1000) {
+      resultCount = DEFAULT_RESULT_COUNT;
+    }
   }
 }
