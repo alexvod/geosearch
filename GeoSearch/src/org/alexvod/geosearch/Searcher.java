@@ -2,7 +2,7 @@ package org.alexvod.geosearch;
 
 import android.content.SharedPreferences;
 
-public abstract class Searcher {
+public interface Searcher {
   public static class Results {
     public String[] titles;
     public int[] x;
@@ -15,7 +15,7 @@ public abstract class Searcher {
     public void gotResults(final Results results); // null if query failed
   }
 
-  public abstract void search(String query, int next_handle, Callback callback);
+  public void search(String query, int next_handle, Callback callback);
 
-  public abstract void loadPreferences(SharedPreferences mPrefs);
+  public void loadPreferences(SharedPreferences mPrefs);
 }

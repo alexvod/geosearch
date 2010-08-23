@@ -13,7 +13,7 @@ import android.util.Log;
 
 // Class that search for string (entered by user) with in (a previously 
 // loaded) collection of points.
-public class RemoteSearcher extends Searcher {
+public class RemoteSearcher implements Searcher {
   private static final String LOGTAG = "GeoSearch_Searcher";
   private static final String PREF_URL_FORMAT= "remote_url_format";
   private static String DEFAULT_URL_FORMAT = "http://syringa.org/search?q=%s&s=%d&n=%d";
@@ -107,7 +107,6 @@ public class RemoteSearcher extends Searcher {
     }
   }
 
-  @Override
   public void loadPreferences(SharedPreferences prefs) {
     urlFormat = SettingsHelper.getStringPref(prefs, PREF_URL_FORMAT, DEFAULT_URL_FORMAT);
     resultCount = SettingsHelper.getIntPref(prefs, PREF_RESULT_COUNT, DEFAULT_RESULT_COUNT); 

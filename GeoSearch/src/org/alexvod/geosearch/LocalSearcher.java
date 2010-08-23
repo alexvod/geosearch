@@ -11,7 +11,7 @@ import android.util.Log;
 
 // Class that search for string (entered by user) with in (a previously 
 // loaded) collection of points.
-public class LocalSearcher extends Searcher {
+public class LocalSearcher implements Searcher {
   private static final String LOGTAG = "GeoSearch_LocalSearcher";
   private static final String PREF_RESULT_COUNT = "local_result_count";
   private static final int DEFAULT_RESULT_COUNT = 400;
@@ -60,7 +60,6 @@ public class LocalSearcher extends Searcher {
     IOUtils.readIntArrayBE(buffer, 0, xcoord, count);
   }
 
-  @Override
   public void search(String substring, int start, Callback callback) {
     long startTime = System.currentTimeMillis();
     Results results = new Results();
@@ -87,7 +86,6 @@ public class LocalSearcher extends Searcher {
     callback.gotResults(results);
   }
 
-  @Override
   public void loadPreferences(SharedPreferences prefs) {
     resultCount = SettingsHelper.getIntPref(prefs, PREF_RESULT_COUNT, DEFAULT_RESULT_COUNT);
     if (resultCount < 1 || resultCount > 1000) {

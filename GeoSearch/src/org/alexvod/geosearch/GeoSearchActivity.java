@@ -41,17 +41,10 @@ public class GeoSearchActivity extends Activity {
   @Override
   public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
+    searcher = ((SearchApplication)getApplication()).getSearcher();
     prefs = PreferenceManager.getDefaultSharedPreferences(this);
     loadPreferences();
     setContentView(R.layout.main);
-
-    // Create search on the first run
-    if (searcher == null) {
-      createSearcher();
-    } else {
-      Log.e(LOGTAG, "Using existing searcher");
-    }
-    searcher.loadPreferences(prefs);
 
     adapter = new ArrayAdapter<String>(this, R.layout.searchresult);
     handler = new Handler();
@@ -117,20 +110,6 @@ public class GeoSearchActivity extends Activity {
     if (searcher != null) {
       searcher.loadPreferences(prefs);
     }
-  }
-
-  private void createSearcher() {
-    if (searchMode.equals("remote")) {
-      Log.e(LOGTAG, "Creating new RemoteSearcher");
-      searcher = new RemoteSearcher();
-      return;
-    }
-    if (searchMode.equals("local")) {
-      Log.e(LOGTAG, "Creating new LocalSearcher");
-      searcher = new LocalSearcher();
-      return;
-    }
-    throw new RuntimeException("Unknown search mode " + searchMode);
   }
 
   private void updateResults(Results results, boolean addAtEnd) {
@@ -225,7 +204,7 @@ public class GeoSearchActivity extends Activity {
         "Switch to " + otherMode).setOnMenuItemClickListener(new OnMenuItemClickListener() {
           public boolean onMenuItemClick(MenuItem item) {
             searchMode = otherMode;
-            createSearcher();
+            searcher = ((SearchApplication)getApplication()).createSearcher(); 
             searcher.loadPreferences(prefs);
             doSearch();
             return true;
