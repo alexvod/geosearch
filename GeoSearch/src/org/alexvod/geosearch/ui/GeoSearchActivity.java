@@ -1,5 +1,7 @@
-package org.alexvod.geosearch;
+package org.alexvod.geosearch.ui;
 
+import org.alexvod.geosearch.R;
+import org.alexvod.geosearch.Searcher;
 import org.alexvod.geosearch.Searcher.Results;
 import org.nativeutils.ByteArraySlice;
 import org.nativeutils.OutByteStream;

@@ -1,4 +1,8 @@
-package org.alexvod.geosearch;
+package org.alexvod.geosearch.ui;
+
+import org.alexvod.geosearch.LocalSearcher;
+import org.alexvod.geosearch.RemoteSearcher;
+import org.alexvod.geosearch.Searcher;
 
 import android.app.Application;
 import android.content.SharedPreferences;

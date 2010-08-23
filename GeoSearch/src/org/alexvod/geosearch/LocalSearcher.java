@@ -4,6 +4,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 
+import org.alexvod.geosearch.ui.SettingsHelper;
 import org.nativeutils.IOUtils;
 
 import android.content.SharedPreferences;

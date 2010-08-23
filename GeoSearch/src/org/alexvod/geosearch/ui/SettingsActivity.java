@@ -1,4 +1,6 @@
-package org.alexvod.geosearch;
+package org.alexvod.geosearch.ui;
+
+import org.alexvod.geosearch.R;
 
 import android.os.Bundle;
 import android.preference.PreferenceActivity;

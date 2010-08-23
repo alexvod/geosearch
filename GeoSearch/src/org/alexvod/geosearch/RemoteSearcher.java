@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.net.URLEncoder;
 
+import org.alexvod.geosearch.ui.SettingsHelper;
 import org.nativeutils.InByteStream;
 
 import android.content.SharedPreferences;

@@ -1,4 +1,4 @@
-package org.alexvod.geosearch;
+package org.alexvod.geosearch.ui;
 
 import android.content.SharedPreferences;
 
