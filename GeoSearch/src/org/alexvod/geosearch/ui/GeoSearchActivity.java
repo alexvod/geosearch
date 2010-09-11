@@ -3,10 +3,10 @@ package org.alexvod.geosearch.ui;
 import org.alexvod.geosearch.R;
 import org.alexvod.geosearch.Searcher;
 import org.alexvod.geosearch.Searcher.Results;
-import org.ushmax.common.ByteArraySlice;
 import org.ushmax.common.Logger;
 import org.ushmax.common.LoggerFactory;
-import org.ushmax.common.OutByteStream;
+import org.ushmax.kml.Proto.KmlFile;
+import org.ushmax.kml.Proto.KmlPoint;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -18,14 +18,14 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 import android.view.MenuItem.OnMenuItemClickListener;
+import android.view.View;
 import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Toast;
-import android.widget.AdapterView.OnItemClickListener;
 
 public class GeoSearchActivity extends Activity {
   private static final Logger logger = LoggerFactory.getLogger(GeoSearchActivity.class);
@@ -232,27 +232,25 @@ public class GeoSearchActivity extends Activity {
       return;
     } 
     logger.debug("returning all results");
-    ByteArraySlice packedResult = getPackedResults();
+    byte[] packedResult = getPackedResults();
     Intent intent = getIntent();
-    byte[] copy = new byte[packedResult.count];
-    System.arraycopy(packedResult.data, packedResult.start, copy, 0, packedResult.count);
-    intent.putExtra("org.alexvod.geosearch.ALL_RESULTS", copy);
+    intent.putExtra("org.alexvod.geosearch.ALL_RESULTS", packedResult);
     setResult(RESULT_OK, intent);
     finish();
   }
 
-  private ByteArraySlice getPackedResults() {
-    OutByteStream out = new OutByteStream();
+  private byte[] getPackedResults() {
+    KmlFile.Builder builder = KmlFile.newBuilder();
     int size = currentResults.titles.length;
-    out.writeIntBE(size);
     for (int i = 0; i < size; ++i) {
-      out.writeIntBE(currentResults.x[i]);
-      out.writeIntBE(currentResults.y[i]);
-      out.writeString(currentResults.titles[i]);
-      out.writeString("");
-      out.writeString("res.png");
+      KmlPoint.Builder pbuilder = KmlPoint.newBuilder();
+      pbuilder.setX(currentResults.x[i]);
+      pbuilder.setY(currentResults.y[i]);
+      pbuilder.setTitle(currentResults.titles[i]);
+      pbuilder.setIcon("red_dot.png");
+      builder.addPoint(pbuilder);
     }
-    return out.getResult();
+    return builder.build().toByteArray();
   }
 
   private void returnResult(int index) {
