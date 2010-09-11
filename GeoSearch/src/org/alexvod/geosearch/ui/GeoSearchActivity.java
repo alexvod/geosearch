@@ -3,8 +3,8 @@ package org.alexvod.geosearch.ui;
 import org.alexvod.geosearch.R;
 import org.alexvod.geosearch.Searcher;
 import org.alexvod.geosearch.Searcher.Results;
-import org.nativeutils.ByteArraySlice;
-import org.nativeutils.OutByteStream;
+import org.ushmax.common.ByteArraySlice;
+import org.ushmax.common.OutByteStream;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -233,7 +233,9 @@ public class GeoSearchActivity extends Activity {
     Log.e(LOGTAG, "returning all results");
     ByteArraySlice packedResult = getPackedResults();
     Intent intent = getIntent();
-    intent.putExtra("org.alexvod.geosearch.ALL_RESULTS", packedResult.getCopy());
+    byte[] copy = new byte[packedResult.count];
+    System.arraycopy(packedResult.data, packedResult.start, copy, 0, packedResult.count);
+    intent.putExtra("org.alexvod.geosearch.ALL_RESULTS", copy);
     setResult(RESULT_OK, intent);
     finish();
   }

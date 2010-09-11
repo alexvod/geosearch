@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 import org.alexvod.geosearch.ui.SettingsHelper;
-import org.nativeutils.IOUtils;
+import org.nativeutils.NativeUtils;
 
 import android.content.SharedPreferences;
 import android.util.Log;
@@ -34,7 +34,7 @@ public class LocalSearcher implements Searcher {
       FileInputStream stream = new FileInputStream(indexDataFile);
       byte[] buffer = new byte[4];
       stream.read(buffer);
-      count = IOUtils.readIntBE(buffer, 0);
+      count = NativeUtils.readIntBE(buffer, 0);
       Log.d(LOGTAG, "index file has " + count + " entries");
       loadCoords(stream, count);
       loadContent(stream);
@@ -56,9 +56,9 @@ public class LocalSearcher implements Searcher {
     ycoord = new int[count];
     byte[] buffer = new byte[4 * count];
     stream.read(buffer);
-    IOUtils.readIntArrayBE(buffer, 0, ycoord, count);
+    NativeUtils.readIntArrayBE(buffer, 0, ycoord, count);
     stream.read(buffer);
-    IOUtils.readIntArrayBE(buffer, 0, xcoord, count);
+    NativeUtils.readIntArrayBE(buffer, 0, xcoord, count);
   }
 
   public void search(String substring, int start, Callback callback) {

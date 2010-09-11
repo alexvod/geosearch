@@ -7,7 +7,7 @@ import java.net.URL;
 import java.net.URLEncoder;
 
 import org.alexvod.geosearch.ui.SettingsHelper;
-import org.nativeutils.InByteStream;
+import org.ushmax.common.InByteStream;
 
 import android.content.SharedPreferences;
 import android.util.Log;
