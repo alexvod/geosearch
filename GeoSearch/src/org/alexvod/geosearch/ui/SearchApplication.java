@@ -3,6 +3,7 @@ package org.alexvod.geosearch.ui;
 import org.alexvod.geosearch.LocalSearcher;
 import org.alexvod.geosearch.RemoteSearcher;
 import org.alexvod.geosearch.Searcher;
+import org.ushmax.common.Factory;
 import org.ushmax.common.Logger;
 import org.ushmax.common.LoggerFactory;
 
@@ -11,8 +12,17 @@ import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 
 public class SearchApplication extends Application {
-  private static final Logger logger = LoggerFactory.getLogger(SearchApplication.class);
+  private final Logger logger; 
   private Searcher searcher;
+  
+  public SearchApplication() {
+    System.loadLibrary("nativeutils");
+    LoggerFactory.setLoggerFactory(new Factory<Logger, Class<?>>() {
+      public Logger create(Class<?> clazz) {
+        return new AndroidLogger(clazz.getSimpleName());
+      }});
+    logger = LoggerFactory.getLogger(SearchApplication.class);
+  }
   
   @Override
   public void onCreate() {
