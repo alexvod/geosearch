@@ -5,11 +5,11 @@ import java.io.InputStream;
 import java.util.ArrayList;
 
 import org.nativeutils.NativeUtils;
-
-import android.util.Log;
+import org.ushmax.common.Logger;
+import org.ushmax.common.LoggerFactory;
 
 public class ByteStringData implements IStringData {
-  private static final String LOGTAG = "GeoSearch_ByteStringData";
+  private static final Logger logger = LoggerFactory.getLogger(ByteStringData.class);
   private static final int POS_VECTOR_SAMPLING = 3;
   private byte[] content;
   private char[] charset;
@@ -30,10 +30,10 @@ public class ByteStringData implements IStringData {
     charset = readCharset(stream);
     separator = char2byte('\n');
 
-    Log.d(LOGTAG, "Reading " + totalChars + " characters");
+    logger.debug("Reading " + totalChars + " characters");
     content = new byte[totalChars];
     int numChars = stream.read(content);
-    Log.d(LOGTAG, "Total " + numChars + " characters loaded " +
+    logger.debug("Total " + numChars + " characters loaded " +
         "(must be == " + totalChars + ")");
     makePosVector();
   }
@@ -70,7 +70,7 @@ public class ByteStringData implements IStringData {
     byte[] buffer = new byte[4];
     stream.read(buffer);
     int charset_size = NativeUtils.readIntBE(buffer, 0);
-    Log.d(LOGTAG, "Custom charset has " + charset_size + " chars");
+    logger.debug("Custom charset has " + charset_size + " chars");
     char[] chars = new char[charset_size];
     buffer = new byte[2*charset_size];
     stream.read(buffer);
@@ -83,7 +83,7 @@ public class ByteStringData implements IStringData {
     pos_vector = new int[(count >> POS_VECTOR_SAMPLING) + 1];
     byte separator = char2byte('\n');
     NativeUtils.makeSampledPosVector(content, pos_vector, separator, POS_VECTOR_SAMPLING);
-    Log.d(LOGTAG, "sample vector: " + (System.currentTimeMillis() - startTime) + "ms");
+    logger.debug("sample vector: " + (System.currentTimeMillis() - startTime) + "ms");
   }
 
   public int getPosForResultNum(int num) {
@@ -141,7 +141,7 @@ public class ByteStringData implements IStringData {
     }
     byte[] encoded = new byte[str_length];
     if (!decodeString(s, encoded)) {
-      Log.d(LOGTAG, "cannot decode string");
+      logger.debug("cannot decode string");
       return -1;
     }
     if (next_handle < 0 || next_handle > content.length) {
@@ -167,7 +167,7 @@ public class ByteStringData implements IStringData {
       totalFound++;
       searchStart = end + 1;
       if (totalFound >= max_results) {
-        Log.d(LOGTAG, "got " + totalFound + " results, truncated");
+        logger.debug("got " + totalFound + " results, truncated");
         break;
       }
     }

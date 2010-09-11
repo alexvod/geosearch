@@ -4,6 +4,8 @@ import org.alexvod.geosearch.R;
 import org.alexvod.geosearch.Searcher;
 import org.alexvod.geosearch.Searcher.Results;
 import org.ushmax.common.ByteArraySlice;
+import org.ushmax.common.Logger;
+import org.ushmax.common.LoggerFactory;
 import org.ushmax.common.OutByteStream;
 
 import android.app.Activity;
@@ -14,7 +16,6 @@ import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.text.Editable;
 import android.text.TextWatcher;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -27,7 +28,7 @@ import android.widget.Toast;
 import android.widget.AdapterView.OnItemClickListener;
 
 public class GeoSearchActivity extends Activity {
-  private static final String LOGTAG = "GeoSearch_GeoSearchActivity";
+  private static final Logger logger = LoggerFactory.getLogger(GeoSearchActivity.class);
   private static final int SWITCH_MODE_MENU_ID = 1;
   private static final int SETTINGS_ACTIVITY = 1;
   private static Searcher searcher;
@@ -230,7 +231,7 @@ public class GeoSearchActivity extends Activity {
       Toast.makeText(this, "No results to show", Toast.LENGTH_SHORT).show();
       return;
     } 
-    Log.e(LOGTAG, "returning all results");
+    logger.debug("returning all results");
     ByteArraySlice packedResult = getPackedResults();
     Intent intent = getIntent();
     byte[] copy = new byte[packedResult.count];
@@ -258,7 +259,7 @@ public class GeoSearchActivity extends Activity {
     String title = currentResults.titles[index];
     int x = currentResults.x[index];
     int y = currentResults.y[index];
-    Log.e(LOGTAG, "returning result: " + title + "@" + x + "," + y);
+    logger.debug("returning result: " + title + "@" + x + "," + y);
     Intent intent = getIntent();
     intent.putExtra("org.alexvod.geosearch.TITLE", title);
     intent.putExtra("org.alexvod.geosearch.XCOORD", "" + x);

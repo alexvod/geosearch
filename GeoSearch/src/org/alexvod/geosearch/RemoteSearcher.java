@@ -8,14 +8,15 @@ import java.net.URLEncoder;
 
 import org.alexvod.geosearch.ui.SettingsHelper;
 import org.ushmax.common.InByteStream;
+import org.ushmax.common.Logger;
+import org.ushmax.common.LoggerFactory;
 
 import android.content.SharedPreferences;
-import android.util.Log;
 
 // Class that search for string (entered by user) with in (a previously 
 // loaded) collection of points.
 public class RemoteSearcher implements Searcher {
-  private static final String LOGTAG = "GeoSearch_Searcher";
+  private static final Logger logger = LoggerFactory.getLogger(RemoteSearcher.class);
   private static final String PREF_URL_FORMAT= "remote_url_format";
   private static String DEFAULT_URL_FORMAT = "http://syringa.org/search?q=%s&s=%d&n=%d";
   private static final String PREF_RESULT_COUNT = "remote_result_count";
@@ -30,18 +31,18 @@ public class RemoteSearcher implements Searcher {
       final Callback callback) {
     currentQuery = new Thread(new Runnable() {
       public void run() {
-        Log.d(LOGTAG, "searching for " + substring);
+        logger.debug("searching for " + substring);
         long startTime = System.currentTimeMillis();
         Results results = querySynchronous(substring, cont_handle, resultCount);
         if (results == null) {
-          Log.d(LOGTAG, "got error");
+          logger.debug("got error");
         } else {
-          Log.d(LOGTAG, "got " + results.titles.length + " results");
+          logger.debug("got " + results.titles.length + " results");
         }
         long endTime = System.currentTimeMillis();
-        Log.d(LOGTAG, "search for " + substring + " took " + (endTime - startTime) + "ms");
+        logger.debug("search for " + substring + " took " + (endTime - startTime) + "ms");
         if (Thread.currentThread() != currentQuery) {
-          Log.d(LOGTAG, "Preempted, not invoking callback");
+          logger.debug("Preempted, not invoking callback");
         } else {
           callback.gotResults(results);
         }
@@ -70,7 +71,7 @@ public class RemoteSearcher implements Searcher {
       results.query = substring;
       return results;
     } catch (IOException e) {
-      Log.w(LOGTAG, e.toString());
+      logger.warning(e.toString());
       return null;
     }
   }
@@ -81,7 +82,7 @@ public class RemoteSearcher implements Searcher {
       InByteStream ibs = new InByteStream(byteArray, 0, byteArray.length);
       int next = ibs.readIntBE();
       int num = ibs.readIntBE();
-      //Log.d(LOGTAG, "next=" + next + " num=" + num);
+      //logger.debug("next=" + next + " num=" + num);
       Results results = new Results();
       results.titles = new String[num];
       results.x = new int[num];
@@ -98,12 +99,12 @@ public class RemoteSearcher implements Searcher {
         }
         int s = ibs.parseUtf8String(buf, strlen);
         results.titles[i] = new String(buf, 0, s);
-        //Log.d(LOGTAG, "lat=" + results.lats[i] + " lng=" + results.lngs[i] + " title=" + results.titles[i]);
+        //logger.debug("lat=" + results.lats[i] + " lng=" + results.lngs[i] + " title=" + results.titles[i]);
       }
       results.next_handle = next;
       return results;
     } catch (ArrayIndexOutOfBoundsException e) {
-      Log.w(LOGTAG, e.toString());
+      logger.warning(e.toString());
       return null;
     }
   }

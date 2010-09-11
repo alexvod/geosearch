@@ -6,14 +6,15 @@ import java.util.ArrayList;
 
 import org.alexvod.geosearch.ui.SettingsHelper;
 import org.nativeutils.NativeUtils;
+import org.ushmax.common.Logger;
+import org.ushmax.common.LoggerFactory;
 
 import android.content.SharedPreferences;
-import android.util.Log;
 
 // Class that search for string (entered by user) with in (a previously 
 // loaded) collection of points.
 public class LocalSearcher implements Searcher {
-  private static final String LOGTAG = "GeoSearch_LocalSearcher";
+  private static final Logger logger = LoggerFactory.getLogger(LocalSearcher.class);
   private static final String PREF_RESULT_COUNT = "local_result_count";
   private static final int DEFAULT_RESULT_COUNT = 400;
   private IStringData string_data;
@@ -28,19 +29,19 @@ public class LocalSearcher implements Searcher {
   }
 
   private void loadData() {
-    Log.d(LOGTAG, "Loading search data...");
+    logger.debug("Loading search data...");
     String indexDataFile = "/sdcard/maps/index.dat";
     try {
       FileInputStream stream = new FileInputStream(indexDataFile);
       byte[] buffer = new byte[4];
       stream.read(buffer);
       count = NativeUtils.readIntBE(buffer, 0);
-      Log.d(LOGTAG, "index file has " + count + " entries");
+      logger.debug("index file has " + count + " entries");
       loadCoords(stream, count);
       loadContent(stream);
       stream.close();
     } catch (IOException f) {
-      Log.e(LOGTAG, "Cannot read file");
+      logger.error("Cannot read file " + indexDataFile);
     }
   }
 
@@ -81,9 +82,9 @@ public class LocalSearcher implements Searcher {
     }
     results.next_handle = next_handle;
     results.query = substring;
-    Log.d(LOGTAG, "got " + num + " results");
+    logger.debug("got " + num + " results");
     long endTime = System.currentTimeMillis();
-    Log.d(LOGTAG, "search for " + substring + " took " + (endTime - startTime) + "ms");
+    logger.debug("search for " + substring + " took " + (endTime - startTime) + "ms");
     callback.gotResults(results);
   }
 
