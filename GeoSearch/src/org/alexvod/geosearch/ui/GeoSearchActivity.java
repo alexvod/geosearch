@@ -136,10 +136,11 @@ public class GeoSearchActivity extends Activity {
       for (String result : results.titles) {
         adapter.add(result);
       }
+      int numResults = (addAtEnd ? currentResults.titles.length : 0) + results.titles.length; 
       if (results.next_handle != -1) {
-        adapter.add("- GET MORE RESULTS -");
+        adapter.add("- [" + numResults + "] GET MORE RESULTS -");
       } else {
-        adapter.add("[END]");
+        adapter.add("[END - " + numResults + " RESULTS TOTAL]");
       }
     }
     if (addAtEnd) {
@@ -206,6 +207,8 @@ public class GeoSearchActivity extends Activity {
     menu.add(Menu.NONE, SWITCH_MODE_MENU_ID, Menu.  NONE,
         "Switch to " + otherMode).setOnMenuItemClickListener(new OnMenuItemClickListener() {
           public boolean onMenuItemClick(MenuItem item) {
+            SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(GeoSearchActivity.this);
+            SettingsHelper.setStringPref(prefs, "search_mode", otherMode);
             searchMode = otherMode;
             searcher = ((SearchApplication)getApplication()).createSearcher(); 
             searcher.loadPreferences(prefs);
