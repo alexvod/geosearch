@@ -11,17 +11,17 @@ import android.app.Application;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 
-public class SearchApplication extends Application {
+public class GeoSearchApplication extends Application {
   private final Logger logger; 
   private Searcher searcher;
   
-  public SearchApplication() {
+  public GeoSearchApplication() {
     System.loadLibrary("nativeutils");
     LoggerFactory.setLoggerFactory(new Factory<Logger, Class<?>>() {
       public Logger create(Class<?> clazz) {
         return new AndroidLogger(clazz.getSimpleName());
       }});
-    logger = LoggerFactory.getLogger(SearchApplication.class);
+    logger = LoggerFactory.getLogger(GeoSearchApplication.class);
   }
   
   @Override

@@ -101,7 +101,7 @@ public class RemoteSearcher implements Searcher {
         results.titles[i] = new String(buf, 0, s);
         //logger.debug("lat=" + results.lats[i] + " lng=" + results.lngs[i] + " title=" + results.titles[i]);
       }
-      results.next_handle = next;
+      results.nextHandle = next;
       return results;
     } catch (ArrayIndexOutOfBoundsException e) {
       logger.warning(e.toString());

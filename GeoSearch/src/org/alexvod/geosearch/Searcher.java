@@ -7,7 +7,7 @@ public interface Searcher {
     public String[] titles;
     public int[] x;
     public int[] y;
-    public int next_handle;  // -1 if eof
+    public int nextHandle;  // -1 if eof
     public String query;
   }
 

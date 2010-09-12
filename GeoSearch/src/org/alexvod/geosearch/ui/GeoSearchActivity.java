@@ -44,7 +44,7 @@ public class GeoSearchActivity extends Activity {
   @Override
   public void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
-    searcher = ((SearchApplication)getApplication()).getSearcher();
+    searcher = ((GeoSearchApplication)getApplication()).getSearcher();
     prefs = PreferenceManager.getDefaultSharedPreferences(this);
     loadPreferences();
     setContentView(R.layout.main);
@@ -73,9 +73,9 @@ public class GeoSearchActivity extends Activity {
           return;
         }
         if (adapter.getCount() > 1 && position == adapter.getCount()-1) {
-          if (currentResults.next_handle != -1) {
+          if (currentResults.nextHandle != -1) {
             searcher.search(currentResults.query,
-                currentResults.next_handle,
+                currentResults.nextHandle,
                 new Searcher.Callback() {
               public void gotResults(final Results results) {
                 handler.post(new Runnable() {
@@ -137,7 +137,7 @@ public class GeoSearchActivity extends Activity {
         adapter.add(result);
       }
       int numResults = (addAtEnd ? currentResults.titles.length : 0) + results.titles.length; 
-      if (results.next_handle != -1) {
+      if (results.nextHandle != -1) {
         adapter.add("- [" + numResults + "] GET MORE RESULTS -");
       } else {
         adapter.add("[END - " + numResults + " RESULTS TOTAL]");
@@ -162,7 +162,7 @@ public class GeoSearchActivity extends Activity {
       System.arraycopy(results.titles, 0, newtitles, currentSize, resultsSize);
       currentResults.titles = newtitles;
 
-      currentResults.next_handle = results.next_handle;
+      currentResults.nextHandle = results.nextHandle;
     } else {
       currentResults = results;
     }
@@ -210,7 +210,7 @@ public class GeoSearchActivity extends Activity {
             SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(GeoSearchActivity.this);
             SettingsHelper.setStringPref(prefs, "search_mode", otherMode);
             searchMode = otherMode;
-            searcher = ((SearchApplication)getApplication()).createSearcher(); 
+            searcher = ((GeoSearchApplication)getApplication()).createSearcher(); 
             searcher.loadPreferences(prefs);
             doSearch();
             return true;

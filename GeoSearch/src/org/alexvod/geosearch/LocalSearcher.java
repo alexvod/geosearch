@@ -17,7 +17,7 @@ public class LocalSearcher implements Searcher {
   private static final Logger logger = LoggerFactory.getLogger(LocalSearcher.class);
   private static final String PREF_RESULT_COUNT = "local_result_count";
   private static final int DEFAULT_RESULT_COUNT = 400;
-  private IStringData string_data;
+  private IStringData stringData;
   private int resultCount;
   private int[] xcoord;
   private int[] ycoord;
@@ -49,7 +49,7 @@ public class LocalSearcher implements Searcher {
     IStringData data = null; 
     data = new ByteStringData();
     data.initFromStream(stream);
-    string_data = data;
+    stringData = data;
   }
 
   private void loadCoords(FileInputStream stream, int count) throws IOException {
@@ -68,19 +68,19 @@ public class LocalSearcher implements Searcher {
     // TODO: this is dirty hack, rewrite it
     ArrayList<String> searchResults = new ArrayList<String>();
     searchResults.ensureCapacity(resultCount);
-    int next_handle = string_data.searchSubstring(substring, start, resultCount, searchResults);
+    int nextHandle = stringData.searchSubstring(substring, start, resultCount, searchResults);
     int num = searchResults.size();
     results.titles = new String[num];
     results.x = new int[num];
     results.y = new int[num];
     for (int i = 0; i < num; ++i) {
-      int pos = string_data.getPosForResultNum(i); 
-      int idx = string_data.getIndex(pos);
+      int pos = stringData.getPosForResultNum(i); 
+      int idx = stringData.getIndex(pos);
       results.x[i] = xcoord[idx];
       results.y[i] = ycoord[idx];
       results.titles[i] = searchResults.get(i);
     }
-    results.next_handle = next_handle;
+    results.nextHandle = nextHandle;
     results.query = substring;
     logger.debug("got " + num + " results");
     long endTime = System.currentTimeMillis();
