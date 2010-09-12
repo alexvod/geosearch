@@ -25,4 +25,26 @@ public class SettingsHelper {
     }
     return prefs.getString(name, defaultValue);
   }
+
+  public static boolean getBoolPref(SharedPreferences prefs, String name, boolean defaultValue) {
+    if (!prefs.contains(name)) {
+      SharedPreferences.Editor ed = prefs.edit();
+      ed.putBoolean(name, defaultValue);
+      ed.commit();
+      return defaultValue;
+    }
+    return prefs.getBoolean(name, defaultValue);
+  }
+  
+  public static void setBoolPref(SharedPreferences prefs, String name, boolean value) {
+    SharedPreferences.Editor ed = prefs.edit();
+    ed.putBoolean(name, value);
+    ed.commit();
+  }
+  
+  public static void setStringPref(SharedPreferences prefs, String name, String value) {
+    SharedPreferences.Editor ed = prefs.edit();
+    ed.putString(name, value);
+    ed.commit();
+  }
 }
