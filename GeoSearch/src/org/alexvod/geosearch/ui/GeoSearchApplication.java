@@ -3,6 +3,8 @@ package org.alexvod.geosearch.ui;
 import org.alexvod.geosearch.LocalSearcher;
 import org.alexvod.geosearch.RemoteSearcher;
 import org.alexvod.geosearch.Searcher;
+import org.ushmax.android.AndroidHttpFetcher;
+import org.ushmax.android.AndroidLogger;
 import org.ushmax.common.Factory;
 import org.ushmax.common.Logger;
 import org.ushmax.common.LoggerFactory;
@@ -35,7 +37,7 @@ public class GeoSearchApplication extends Application {
     String searchMode = prefs.getString("search_mode", "remote");
     if (searchMode.equals("remote")) {
       logger.debug("Creating new RemoteSearcher");
-      searcher = new RemoteSearcher();
+      searcher = new RemoteSearcher(new AndroidHttpFetcher());
     } else if (searchMode.equals("local")) {
       logger.debug("Creating new LocalSearcher");
       searcher = new LocalSearcher();

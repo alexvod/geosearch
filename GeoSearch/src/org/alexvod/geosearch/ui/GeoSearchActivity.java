@@ -3,6 +3,7 @@ package org.alexvod.geosearch.ui;
 import org.alexvod.geosearch.R;
 import org.alexvod.geosearch.Searcher;
 import org.alexvod.geosearch.Searcher.Results;
+import org.ushmax.android.SettingsHelper;
 import org.ushmax.common.Logger;
 import org.ushmax.common.LoggerFactory;
 import org.ushmax.kml.Proto.KmlFile;

@@ -4,8 +4,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 
-import org.alexvod.geosearch.ui.SettingsHelper;
 import org.nativeutils.NativeUtils;
+import org.ushmax.android.SettingsHelper;
 import org.ushmax.common.Logger;
 import org.ushmax.common.LoggerFactory;
 

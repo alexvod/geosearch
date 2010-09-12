@@ -1,15 +1,15 @@
 package org.alexvod.geosearch;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
+import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 
-import org.alexvod.geosearch.ui.SettingsHelper;
+import org.ushmax.android.SettingsHelper;
+import org.ushmax.common.ByteArraySlice;
 import org.ushmax.common.InByteStream;
 import org.ushmax.common.Logger;
 import org.ushmax.common.LoggerFactory;
+import org.ushmax.fetcher.HttpFetcher;
+import org.ushmax.fetcher.HttpFetcher.NetworkException;
 
 import android.content.SharedPreferences;
 
@@ -25,6 +25,11 @@ public class RemoteSearcher implements Searcher {
   private int resultCount;
   private String urlFormat;
   private Thread currentQuery = null;
+  private final HttpFetcher httpFetcher;
+  
+  public RemoteSearcher(HttpFetcher httpFetcher) {
+    this.httpFetcher = httpFetcher;
+  }
 
   public void search(final String substring,
       final int cont_handle,
@@ -55,31 +60,23 @@ public class RemoteSearcher implements Searcher {
     try {
       String encoded = URLEncoder.encode(substring, "utf-8");
       String url = String.format(urlFormat, encoded, handle, limit);
-      URL remote = new URL(url);
-      InputStream inStream = remote.openStream();
-      ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-      byte[] buf = new byte[8192];
-      while (true) {
-        int numBytes = inStream.read(buf);
-        if (numBytes < 0)
-          break;
-        outStream.write(buf, 0, numBytes);
-      }
-      inStream.close();
-      Results results = parse(outStream.toByteArray());
+      ByteArraySlice data = httpFetcher.fetch(url);
+      Results results = parse(data);
       if (results == null) return null;
       results.query = substring;
       return results;
-    } catch (IOException e) {
-      logger.warning(e.toString());
+    } catch (NetworkException e) {
+      logger.warning("Network error occured: " + e);
       return null;
+    } catch (UnsupportedEncodingException e) {
+      throw new RuntimeException(e);
     }
   }
 
   private char[] buffer = new char[8192];
-  private Results parse(byte[] byteArray) {
+  private Results parse(ByteArraySlice data) {
     try {
-      InByteStream ibs = new InByteStream(byteArray, 0, byteArray.length);
+      InByteStream ibs = new InByteStream(data);
       int next = ibs.readIntBE();
       int num = ibs.readIntBE();
       //logger.debug("next=" + next + " num=" + num);
