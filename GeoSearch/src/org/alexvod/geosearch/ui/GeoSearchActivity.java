@@ -6,8 +6,9 @@ import org.alexvod.geosearch.Searcher.Results;
 import org.ushmax.android.SettingsHelper;
 import org.ushmax.common.Logger;
 import org.ushmax.common.LoggerFactory;
+import org.ushmax.kml.Proto.KmlFeature;
 import org.ushmax.kml.Proto.KmlFile;
-import org.ushmax.kml.Proto.KmlPoint;
+import org.ushmax.kml.Proto.PointGeometry;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -247,12 +248,14 @@ public class GeoSearchActivity extends Activity {
     KmlFile.Builder builder = KmlFile.newBuilder();
     int size = currentResults.titles.length;
     for (int i = 0; i < size; ++i) {
-      KmlPoint.Builder pbuilder = KmlPoint.newBuilder();
-      pbuilder.setX(currentResults.x[i]);
-      pbuilder.setY(currentResults.y[i]);
-      pbuilder.setTitle(currentResults.titles[i]);
-      pbuilder.setIcon("red_dot.png");
-      builder.addPoint(pbuilder);
+      KmlFeature.Builder feature = KmlFeature.newBuilder();
+      PointGeometry.Builder point = PointGeometry.newBuilder();
+      point.setX(currentResults.x[i]);
+      point.setY(currentResults.y[i]);
+      feature.setPoint(point);
+      feature.setName(currentResults.titles[i]);
+      feature.setIcon("red_dot.png");
+      builder.addFeature(feature);
     }
     return builder.build().toByteArray();
   }
