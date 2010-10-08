@@ -5,6 +5,7 @@ import java.net.URLEncoder;
 
 import org.ushmax.android.SettingsHelper;
 import org.ushmax.common.ByteArraySlice;
+import org.ushmax.common.Closure;
 import org.ushmax.common.InByteStream;
 import org.ushmax.common.Logger;
 import org.ushmax.common.LoggerFactory;
@@ -31,9 +32,10 @@ public class RemoteSearcher implements Searcher {
     this.httpFetcher = httpFetcher;
   }
 
+  @Override
   public void search(final String substring,
       final int cont_handle,
-      final Callback callback) {
+      final Closure<Results> callback) {
     currentQuery = new Thread(new Runnable() {
       public void run() {
         logger.debug("searching for " + substring);
@@ -49,7 +51,7 @@ public class RemoteSearcher implements Searcher {
         if (Thread.currentThread() != currentQuery) {
           logger.debug("Preempted, not invoking callback");
         } else {
-          callback.gotResults(results);
+          callback.run(results);
         }
       }
     });
@@ -106,6 +108,7 @@ public class RemoteSearcher implements Searcher {
     }
   }
 
+  @Override
   public void loadPreferences(SharedPreferences prefs) {
     urlFormat = SettingsHelper.getStringPref(prefs, PREF_URL_FORMAT, DEFAULT_URL_FORMAT);
     resultCount = SettingsHelper.getIntPref(prefs, PREF_RESULT_COUNT, DEFAULT_RESULT_COUNT); 

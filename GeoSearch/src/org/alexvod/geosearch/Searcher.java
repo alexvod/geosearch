@@ -1,5 +1,7 @@
 package org.alexvod.geosearch;
 
+import org.ushmax.common.Closure;
+
 import android.content.SharedPreferences;
 
 public interface Searcher {
@@ -11,11 +13,7 @@ public interface Searcher {
     public String query;
   }
 
-  public interface Callback {
-    public void gotResults(final Results results); // null if query failed
-  }
-
-  public void search(String query, int next_handle, Callback callback);
+  public void search(String query, int next_handle, Closure<Results> callback);
 
   public void loadPreferences(SharedPreferences mPrefs);
 }

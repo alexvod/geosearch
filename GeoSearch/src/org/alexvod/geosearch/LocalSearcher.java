@@ -6,6 +6,7 @@ import java.util.ArrayList;
 
 import org.nativeutils.NativeUtils;
 import org.ushmax.android.SettingsHelper;
+import org.ushmax.common.Closure;
 import org.ushmax.common.Logger;
 import org.ushmax.common.LoggerFactory;
 
@@ -62,7 +63,8 @@ public class LocalSearcher implements Searcher {
     NativeUtils.readIntArrayBE(buffer, 0, xcoord, count);
   }
 
-  public void search(String substring, int start, Callback callback) {
+  @Override
+  public void search(String substring, int start, Closure<Results> callback) {
     long startTime = System.currentTimeMillis();
     Results results = new Results();
     // TODO: this is dirty hack, rewrite it
@@ -85,9 +87,10 @@ public class LocalSearcher implements Searcher {
     logger.debug("got " + num + " results");
     long endTime = System.currentTimeMillis();
     logger.debug("search for " + substring + " took " + (endTime - startTime) + "ms");
-    callback.gotResults(results);
+    callback.run(results);
   }
 
+  @Override
   public void loadPreferences(SharedPreferences prefs) {
     resultCount = SettingsHelper.getIntPref(prefs, PREF_RESULT_COUNT, DEFAULT_RESULT_COUNT);
     if (resultCount < 1 || resultCount > 1000) {
