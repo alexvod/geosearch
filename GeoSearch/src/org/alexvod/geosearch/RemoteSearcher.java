@@ -5,7 +5,7 @@ import java.net.URLEncoder;
 
 import org.ushmax.android.SettingsHelper;
 import org.ushmax.common.ByteArraySlice;
-import org.ushmax.common.Closure;
+import org.ushmax.common.Callback;
 import org.ushmax.common.InByteStream;
 import org.ushmax.common.Logger;
 import org.ushmax.common.LoggerFactory;
@@ -35,7 +35,7 @@ public class RemoteSearcher implements Searcher {
   @Override
   public void search(final String substring,
       final int cont_handle,
-      final Closure<Results> callback) {
+      final Callback<Results> callback) {
     currentQuery = new Thread(new Runnable() {
       public void run() {
         logger.debug("searching for " + substring);

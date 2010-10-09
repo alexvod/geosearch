@@ -4,7 +4,7 @@ import org.alexvod.geosearch.R;
 import org.alexvod.geosearch.Searcher;
 import org.alexvod.geosearch.Searcher.Results;
 import org.ushmax.android.SettingsHelper;
-import org.ushmax.common.Closure;
+import org.ushmax.common.Callback;
 import org.ushmax.common.Logger;
 import org.ushmax.common.LoggerFactory;
 import org.ushmax.kml.Proto.KmlFeature;
@@ -79,7 +79,7 @@ public class GeoSearchActivity extends Activity {
           if (currentResults.nextHandle != -1) {
             searcher.search(currentResults.query,
                 currentResults.nextHandle,
-                new Closure<Results>() {
+                new Callback<Results>() {
               @Override
               public void run(final Results results) {
                 handler.post(new Runnable() {
@@ -100,7 +100,7 @@ public class GeoSearchActivity extends Activity {
   }
 
   private void doSearch() {
-    searcher.search(lastSearchText, 0, new Closure<Results>() {
+    searcher.search(lastSearchText, 0, new Callback<Results>() {
       @Override
       public void run(final Results results) {
         handler.post(new Runnable() {
