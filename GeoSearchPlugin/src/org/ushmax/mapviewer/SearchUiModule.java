@@ -2,11 +2,11 @@ package org.ushmax.mapviewer;
 
 import org.ushmax.common.BadDataException;
 import org.ushmax.common.ByteArraySlice;
+import org.ushmax.common.Callback;
 import org.ushmax.common.InByteStream;
 import org.ushmax.common.Logger;
 import org.ushmax.common.LoggerFactory;
 
-import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.view.Menu;
@@ -18,7 +18,7 @@ public class SearchUiModule implements UiModule {
   private final KmlController kmlController;
   private final UiController uiController;
   private final ChildActivityManager activityManager;
-  
+
   public SearchUiModule(UiController uiController, KmlController kmlController,
       ChildActivityManager activityManager) {
     this.kmlController = kmlController;
@@ -56,18 +56,17 @@ public class SearchUiModule implements UiModule {
   private void showSearchView() {
     Intent intent = new Intent("org.alexvod.geosearch.SEARCH");
     try {
-      activityManager.startActivity(intent, new ChildActivityManager.Callback() {
-        public void onFinish(int resultCode, Intent data) {
-          if (resultCode == Activity.RESULT_OK && data != null) {
-            byte[] allResults = data.getByteArrayExtra("org.alexvod.geosearch.ALL_RESULTS");
-            if (allResults == null) {
-              logger.debug("No search results, showing single point");
-              String title = data.getStringExtra("org.alexvod.geosearch.TITLE");   
-              uiController.displayMessage(title);
-              moveToGeocodeResult(data);
-            } else {
-              displaySearchResults(allResults);
-            }
+      activityManager.startActivity(intent, new Callback<Intent>() {
+        @Override
+        public void run(Intent data) {
+          byte[] allResults = data.getByteArrayExtra("org.alexvod.geosearch.ALL_RESULTS");
+          if (allResults == null) {
+            logger.debug("No search results, showing single point");
+            String title = data.getStringExtra("org.alexvod.geosearch.TITLE");   
+            uiController.displayMessage(title);
+            moveToGeocodeResult(data);
+          } else {
+            displaySearchResults(allResults);
           }
         }
       });
