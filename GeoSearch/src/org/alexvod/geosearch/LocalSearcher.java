@@ -19,24 +19,16 @@ public class LocalSearcher implements Searcher {
   private static final Logger logger = LoggerFactory.getLogger(LocalSearcher.class);
   private static final String PREF_RESULT_COUNT = "local_result_count";
   private static final int DEFAULT_RESULT_COUNT = 400;
-  private byte[] content;
-  private int count;
+  private final byte[] content;
+  private final int count;
+  private final int[] offset;
+  private final Charset charset;
+  private final int[] xcoord;
+  private final int[] ycoord;
   private int[] result_pos;
-  private int[] offset;
-  private Charset charset;
   private int resultCount;
-  private int[] xcoord;
-  private int[] ycoord;
-
-  public LocalSearcher() {
-    try { 
-      loadData("/sdcard/maps/index.dat");
-    } catch (IOException f) {
-      logger.error("Cannot read search index");
-    }
-  }
-
-  private void loadData(String filename) throws IOException {
+  
+  public LocalSearcher(String filename) throws IOException {
     logger.debug("Loading search index from " + filename);
     FileInputStream stream = new FileInputStream(filename);
     
@@ -71,39 +63,38 @@ public class LocalSearcher implements Searcher {
     stream.close();
   }
 
-  private int getIndex(int pos) {
-    // Do binary search.
-    int min_idx = 0;
-    int max_idx = count - 1;
-    // Check bounds
-    if (pos <= offset[0]) return 0;
-    if (pos >= offset[max_idx]) return max_idx;
-    int mid_idx, mid_pos;
-    while (max_idx - min_idx > 1) {
-      mid_idx = (min_idx + max_idx) / 2;
-      mid_pos = offset[mid_idx];
-      if (pos == mid_pos) return mid_idx;
-      if (pos > mid_pos) {
-        min_idx = mid_idx;
+  // JAVACRAP: why this is not a built-in function?
+  private static int findIndexByOffset(int[] array, int value) {
+    // Binary search with a small modification.
+    int left = 0;
+    int right = array.length - 1;
+    if (value <= array[0]) return 0;
+    if (value >= array[right]) return right;
+    while (right - left > 1) {
+      int middle = (left + right) / 2;
+      int midValue = array[middle];
+      if (value == midValue) return middle;
+      if (value > midValue) {
+        left = middle;
       } else {
-        max_idx = mid_idx;
+        right = middle;
       }
     }
-    if (offset[max_idx] == pos) return max_idx;
-    return min_idx;
-  }
+    if (array[right] == value) return right;
+    return left;
+  }  
 
-  public int searchSubstring(String s, int next_handle, int max_results, ArrayList<String> output) {
+  private int searchSubstring(String s, int nextHandle, int max_results, ArrayList<String> output) {
     result_pos = new int[max_results];
     final int str_length = s.length();
     if (str_length == 0) {
       return -1;
     }
     byte[] encoded = charset.encode(s);
-    if (next_handle < 0 || next_handle > content.length) {
-      throw new RuntimeException("Wrong next_handle for LocalSearch: " + next_handle);
+    if (nextHandle < 0 || nextHandle > content.length) {
+      throw new RuntimeException("Wrong next_handle for LocalSearch: " + nextHandle);
     }
-    int searchStart = next_handle;
+    int searchStart = nextHandle;
     int totalFound = 0;
     final int contentLength = content.length;
     while (searchStart < contentLength) {
@@ -165,7 +156,7 @@ public class LocalSearcher implements Searcher {
     results.x = new int[num];
     results.y = new int[num];
     for (int i = 0; i < num; ++i) {
-      int idx = getIndex(result_pos[i]); 
+      int idx = findIndexByOffset(offset, result_pos[i]); 
       results.x[i] = xcoord[idx];
       results.y[i] = ycoord[idx];
       results.titles[i] = searchResults.get(i);
