@@ -29,59 +29,46 @@ public class LocalSearcher implements Searcher {
   private int[] ycoord;
 
   public LocalSearcher() {
-    loadData();
-  }
-
-  private void loadData() {
-    logger.debug("Loading search data...");
-    String indexDataFile = "/sdcard/maps/index.dat";
-    try {
-      FileInputStream stream = new FileInputStream(indexDataFile);
-      byte[] buffer = new byte[4];
-      stream.read(buffer);
-      count = NativeUtils.readIntBE(buffer, 0);
-      logger.debug("index file has " + count + " entries");
-      loadCoords(stream, count);
-      loadContent(stream);
-      stream.close();
+    try { 
+      loadData("/sdcard/maps/index.dat");
     } catch (IOException f) {
-      logger.error("Cannot read file " + indexDataFile);
+      logger.error("Cannot read search index");
     }
   }
 
-  private void loadContent(FileInputStream stream) throws IOException {
+  private void loadData(String filename) throws IOException {
+    logger.debug("Loading search index from " + filename);
+    FileInputStream stream = new FileInputStream(filename);
+    
     // Read number of entries.
     byte[] buffer = new byte[4];
     stream.read(buffer);
     count = NativeUtils.readIntBE(buffer, 0);
+    logger.debug("Index file has " + count + " entries");
+    buffer = new byte[4 * (count + 1)];
+
+    // Read coords
+    xcoord = new int[count];
+    ycoord = new int[count];
+    stream.read(buffer, 0, 4 * count);
+    NativeUtils.readIntArrayBE(buffer, 0, ycoord, count);
+    stream.read(buffer, 0, 4 * count);
+    NativeUtils.readIntArrayBE(buffer, 0, xcoord, count);
     
     // Read content.
     charset = Charset.read(stream);
-    stream.read(buffer);
+    stream.read(buffer, 0, 4);
     int totalChars = NativeUtils.readIntBE(buffer, 0);
     content = new byte[totalChars];
     stream.read(content);
     logger.debug("Title index has " + totalChars + " characters");
-    
+
     // Read offset array.
     offset = new int[count + 1];
-    buffer = new byte[4 * (count + 1)];
-    stream.read(buffer);
+    stream.read(buffer, 0, 4 * (count + 1));
     NativeUtils.readIntArrayBE(buffer, 0, offset, count + 1);
-  }
 
-  private void loadCoords(FileInputStream stream, int count) throws IOException {
-    xcoord = new int[count];
-    ycoord = new int[count];
-    byte[] buffer = new byte[4 * count];
-    stream.read(buffer);
-    NativeUtils.readIntArrayBE(buffer, 0, ycoord, count);
-    stream.read(buffer);
-    NativeUtils.readIntArrayBE(buffer, 0, xcoord, count);
-  }
-  
-  private int getIndexForResultNum(int num) {
-    return getIndex(result_pos[num]);
+    stream.close();
   }
 
   private int getIndex(int pos) {
@@ -178,7 +165,7 @@ public class LocalSearcher implements Searcher {
     results.x = new int[num];
     results.y = new int[num];
     for (int i = 0; i < num; ++i) {
-      int idx = getIndexForResultNum(i); 
+      int idx = getIndex(result_pos[i]); 
       results.x[i] = xcoord[idx];
       results.y[i] = ycoord[idx];
       results.titles[i] = searchResults.get(i);
