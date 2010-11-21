@@ -18,7 +18,7 @@ public class LocalSearcher implements Searcher {
   private static final Logger logger = LoggerFactory.getLogger(LocalSearcher.class);
   private static final String PREF_RESULT_COUNT = "local_result_count";
   private static final int DEFAULT_RESULT_COUNT = 400;
-  private IStringData stringData;
+  private ByteStringData stringData;
   private int resultCount;
   private int[] xcoord;
   private int[] ycoord;
@@ -47,7 +47,7 @@ public class LocalSearcher implements Searcher {
   }
 
   private void loadContent(FileInputStream stream) throws IOException {
-    IStringData data = null; 
+    ByteStringData data = null; 
     data = new ByteStringData();
     data.initFromStream(stream);
     stringData = data;

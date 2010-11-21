@@ -9,7 +9,7 @@ import org.ushmax.common.Charset;
 import org.ushmax.common.Logger;
 import org.ushmax.common.LoggerFactory;
 
-public class ByteStringData implements IStringData {
+public class ByteStringData {
   private static final Logger logger = LoggerFactory.getLogger(ByteStringData.class);
   private byte[] content;
   int count;
