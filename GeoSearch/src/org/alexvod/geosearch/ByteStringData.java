@@ -41,11 +41,11 @@ public class ByteStringData implements IStringData {
     NativeUtils.readIntArrayBE(buffer, 0, offset, count + 1);
   }
 
-  public int getPosForResultNum(int num) {
-    return result_pos[num];
+  public int getIndexForResultNum(int num) {
+    return getIndex(result_pos[num]);
   }
 
-  public int getIndex(int pos) {
+  private int getIndex(int pos) {
     // Do binary search.
     int min_idx = 0;
     int max_idx = count - 1;

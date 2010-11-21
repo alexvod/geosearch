@@ -76,8 +76,7 @@ public class LocalSearcher implements Searcher {
     results.x = new int[num];
     results.y = new int[num];
     for (int i = 0; i < num; ++i) {
-      int pos = stringData.getPosForResultNum(i); 
-      int idx = stringData.getIndex(pos);
+      int idx = stringData.getIndexForResultNum(i); 
       results.x[i] = xcoord[idx];
       results.y[i] = ycoord[idx];
       results.titles[i] = searchResults.get(i);
