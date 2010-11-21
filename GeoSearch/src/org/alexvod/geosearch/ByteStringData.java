@@ -11,57 +11,51 @@ import org.ushmax.common.LoggerFactory;
 
 public class ByteStringData implements IStringData {
   private static final Logger logger = LoggerFactory.getLogger(ByteStringData.class);
-  private static final int POS_VECTOR_SAMPLING = 3;
   private byte[] content;
   int count;
   private int[] result_pos;
-  private int[] pos_vector;
-  private byte separator;
+  private int[] offset;
   private Charset charset;
 
   public ByteStringData() {
   }
 
   public void initFromStream(InputStream stream) throws IOException {
-    byte[] buffer = new byte[8];
+    // Read number of entries.
+    byte[] buffer = new byte[4];
     stream.read(buffer);
     count = NativeUtils.readIntBE(buffer, 0);
-    int totalChars = NativeUtils.readIntBE(buffer, 4);
-
+    
+    // Read content.
     charset = Charset.read(stream);
-    // TODO: switch to 0 as separator.
-    separator = charset.encode("\n")[0];
-
-    logger.debug("Reading " + totalChars + " characters");
+    stream.read(buffer);
+    int totalChars = NativeUtils.readIntBE(buffer, 0);
     content = new byte[totalChars];
-    int numChars = stream.read(content);
-    logger.debug("Total " + numChars + " characters loaded " +
-        "(must be == " + totalChars + ")");
-    makePosVector();
-  }
-
-  private void makePosVector() {
-    long startTime = System.currentTimeMillis();
-    pos_vector = new int[(count >> POS_VECTOR_SAMPLING) + 1];
-    NativeUtils.makeSampledPosVector(content, pos_vector, separator, POS_VECTOR_SAMPLING);
-    logger.debug("sample vector: " + (System.currentTimeMillis() - startTime) + "ms");
+    stream.read(content);
+    logger.debug("Title index has " + totalChars + " characters");
+    
+    // Read offset array.
+    offset = new int[count + 1];
+    buffer = new byte[4 * (count + 1)];
+    stream.read(buffer);
+    NativeUtils.readIntArrayBE(buffer, 0, offset, count + 1);
   }
 
   public int getPosForResultNum(int num) {
     return result_pos[num];
   }
 
-  private int binarySearchForPos(int pos) {
+  public int getIndex(int pos) {
     // Do binary search.
     int min_idx = 0;
-    int max_idx = (count - 1) >> POS_VECTOR_SAMPLING;
+    int max_idx = count - 1;
     // Check bounds
-    if (pos <= pos_vector[0]) return 0;
-    if (pos >= pos_vector[max_idx]) return max_idx;
+    if (pos <= offset[0]) return 0;
+    if (pos >= offset[max_idx]) return max_idx;
     int mid_idx, mid_pos;
     while (max_idx - min_idx > 1) {
       mid_idx = (min_idx + max_idx) / 2;
-      mid_pos = pos_vector[mid_idx];
+      mid_pos = offset[mid_idx];
       if (pos == mid_pos) return mid_idx;
       if (pos > mid_pos) {
         min_idx = mid_idx;
@@ -69,19 +63,8 @@ public class ByteStringData implements IStringData {
         max_idx = mid_idx;
       }
     }
-    if (pos_vector[max_idx] == pos) return max_idx;
+    if (offset[max_idx] == pos) return max_idx;
     return min_idx;
-  }
-
-  public int getIndex(int pos) {
-    int idx = binarySearchForPos(pos);
-    int cur_pos = pos_vector[idx];
-    int cur_idx = idx << POS_VECTOR_SAMPLING;
-    while (cur_pos < pos) {
-      if (content[cur_pos] == separator) cur_idx++;
-      cur_pos++;
-    }
-    return cur_idx;
   }
 
   public int searchSubstring(String s, int next_handle, int max_results, ArrayList<String> output) {
@@ -106,8 +89,8 @@ public class ByteStringData implements IStringData {
       }
 
       // -1 + 1 = 0
-      int start = searchCharBackward(content, separator, pos) + 1;
-      int end = searchCharForward(content, separator, start + 1);
+      int start = searchCharBackward(content, (byte) 0, pos) + 1;
+      int end = searchCharForward(content, (byte) 0, start + 1);
       if (end == -1) end = contentLength;
       output.add(charset.decodeSubstring(content, start, end));
       result_pos[totalFound] = start;
