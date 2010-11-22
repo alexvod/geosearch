@@ -2,6 +2,7 @@ package org.alexvod.geosearch;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.ArrayList;
 
 import org.ushmax.android.SettingsHelper;
 import org.ushmax.common.ByteArraySlice;
@@ -11,11 +12,13 @@ import org.ushmax.common.Logger;
 import org.ushmax.common.LoggerFactory;
 import org.ushmax.fetcher.HttpFetcher;
 import org.ushmax.fetcher.HttpFetcher.NetworkException;
+import org.ushmax.wikimapia.Placemark;
 
 import android.content.SharedPreferences;
 
 // Class that search for string (entered by user) with in (a previously 
 // loaded) collection of points.
+
 public class RemoteSearcher implements Searcher {
   private static final Logger logger = LoggerFactory.getLogger(RemoteSearcher.class);
   private static final String PREF_URL_FORMAT= "remote_url_format";
@@ -44,7 +47,7 @@ public class RemoteSearcher implements Searcher {
         if (results == null) {
           logger.debug("got error");
         } else {
-          logger.debug("got " + results.titles.length + " results");
+          logger.debug("got " + results.placemarks.size() + " results");
         }
         long endTime = System.currentTimeMillis();
         logger.debug("search for " + substring + " took " + (endTime - startTime) + "ms");
@@ -83,12 +86,12 @@ public class RemoteSearcher implements Searcher {
       int num = ibs.readIntBE();
       //logger.debug("next=" + next + " num=" + num);
       Results results = new Results();
-      results.titles = new String[num];
-      results.x = new int[num];
-      results.y = new int[num];
+      ArrayList<Placemark> placemarks = new ArrayList<Placemark>();
+      placemarks.ensureCapacity(num);
       for (int i = 0; i < num; ++i) {
-        results.y[i] = ibs.readIntBE();
-        results.x[i] = ibs.readIntBE();
+        Placemark placemark = new Placemark();
+        placemark.lowy = ibs.readIntBE();
+        placemark.lowx = ibs.readIntBE();
         int strlen = ibs.readIntBE();
         char[] buf;
         if (strlen > 8192) {
@@ -97,7 +100,7 @@ public class RemoteSearcher implements Searcher {
           buf = buffer;
         }
         int s = ibs.parseUtf8String(buf, strlen);
-        results.titles[i] = new String(buf, 0, s);
+        placemark.name = new String(buf, 0, s);
         //logger.debug("lat=" + results.lats[i] + " lng=" + results.lngs[i] + " title=" + results.titles[i]);
       }
       results.nextHandle = next;

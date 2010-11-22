@@ -1,5 +1,7 @@
 package org.alexvod.geosearch.ui;
 
+import java.io.IOException;
+
 import org.alexvod.geosearch.LocalSearcher;
 import org.alexvod.geosearch.RemoteSearcher;
 import org.alexvod.geosearch.Searcher;
@@ -40,7 +42,11 @@ public class GeoSearchApplication extends Application {
       searcher = new RemoteSearcher(new AndroidHttpFetcher());
     } else if (searchMode.equals("local")) {
       logger.debug("Creating new LocalSearcher");
-      searcher = new LocalSearcher();
+      try {
+        searcher = new LocalSearcher("/sdcard/maps/index.dat");
+      } catch (IOException e) {
+        throw new RuntimeException("Failed to load search index");
+      }
     } else {
       throw new RuntimeException("Unknown search mode " + searchMode);
     }

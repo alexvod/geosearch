@@ -3,6 +3,7 @@ package org.alexvod.geosearch;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 import org.nativeutils.NativeUtils;
 import org.ushmax.android.SettingsHelper;
@@ -10,22 +11,24 @@ import org.ushmax.common.Callback;
 import org.ushmax.common.Charset;
 import org.ushmax.common.Logger;
 import org.ushmax.common.LoggerFactory;
+import org.ushmax.common.Pair;
+import org.ushmax.wikimapia.Placemark;
 
 import android.content.SharedPreferences;
 
 // Class that search for string (entered by user) with in (a previously 
 // loaded) collection of points.
-public class LocalSearcher implements Searcher {
+public final class LocalSearcher implements Searcher {
   private static final Logger logger = LoggerFactory.getLogger(LocalSearcher.class);
   private static final String PREF_RESULT_COUNT = "local_result_count";
   private static final int DEFAULT_RESULT_COUNT = 400;
+  private static final int MAX_RESULTS = 1000;
   private final byte[] content;
   private final int count;
   private final int[] offset;
   private final Charset charset;
   private final int[] xcoord;
   private final int[] ycoord;
-  private int[] result_pos;
   private int resultCount;
   
   public LocalSearcher(String filename) throws IOException {
@@ -82,97 +85,69 @@ public class LocalSearcher implements Searcher {
     }
     if (array[right] == value) return right;
     return left;
-  }  
-
-  private int searchSubstring(String s, int nextHandle, int max_results, ArrayList<String> output) {
-    result_pos = new int[max_results];
-    final int str_length = s.length();
-    if (str_length == 0) {
-      return -1;
+  }
+  
+  public Pair<List<Placemark>, Integer> search(String query, int start, int numResults) {
+    ArrayList<Placemark> result = new ArrayList<Placemark>();
+    if (start < 0) {
+      // JAVACRAP Java type inference sucks
+      return Pair.<List<Placemark>, Integer>newInstance(result, -1);
     }
-    byte[] encoded = charset.encode(s);
-    if (nextHandle < 0 || nextHandle > content.length) {
-      throw new RuntimeException("Wrong next_handle for LocalSearch: " + nextHandle);
+    
+    int num = numResults;
+    if (num < 0 || num > MAX_RESULTS) {
+      num = MAX_RESULTS;
     }
-    int searchStart = nextHandle;
-    int totalFound = 0;
-    final int contentLength = content.length;
-    while (searchStart < contentLength) {
-      int pos = 0;
-      pos = NativeUtils.indexOf(content, encoded, searchStart);
-      if (pos == -1) {
-        searchStart = contentLength;
+    
+    result.ensureCapacity(num);
+    byte[] queryBytes = charset.encode(query);
+    
+    while (start < count) {
+      int pos = NativeUtils.indexOf(content, queryBytes, offset[start]);
+      if (pos < 0) {
+        // Not found.
+        start = -1;
         break;
       }
-
-      // -1 + 1 = 0
-      int start = searchCharBackward(content, (byte) 0, pos) + 1;
-      int end = searchCharForward(content, (byte) 0, start + 1);
-      if (end == -1) end = contentLength;
-      output.add(charset.decodeSubstring(content, start, end));
-      result_pos[totalFound] = start;
-      totalFound++;
-      searchStart = end + 1;
-      if (totalFound >= max_results) {
-        logger.debug("got " + totalFound + " results, truncated");
+    
+      int idx = findIndexByOffset(offset, pos);
+      while ((idx + 1 < offset.length) && (offset[idx + 1] == offset[idx])) {
+        idx++;
+      }
+      start = idx + 1;
+      
+      Placemark placemark = new Placemark();
+      //placemark.id = id[idx];
+      placemark.lowx = xcoord[idx];
+      placemark.lowy = ycoord[idx];
+      placemark.name = charset.decodeSubstring(content, offset[idx], offset[idx + 1] - 1);
+      result.add(placemark);
+      if (result.size() >= num) {
         break;
       }
     }
-    if (searchStart >= contentLength) {
-      return -1;
-    }
-    return searchStart; 
-  }
-
-  static private int searchCharBackward(byte[] content, byte b, int start) {
-    for (int i = start; i >= 0; --i) {
-      if (content[i] == b) {
-        return i;
-      }
-    }
-    return -1;
-  }
-
-  static private int searchCharForward(byte[] content, byte b, int start) {
-    final int length = content.length;
-    for (int i = start; i < length; ++i) {
-      if (content[i] == b) {
-        return i;
-      }
-    }
-    return -1;
+    
+    // JAVACRAP Java type inference sucks
+    return Pair.<List<Placemark>, Integer>newInstance(result, start);
   }
 
   @Override
-  public void search(String substring, int start, Callback<Results> callback) {
+  public void search(String query, int start, Callback<Results> callback) {
     long startTime = System.currentTimeMillis();
-    Results results = new Results();
-    // TODO: this is dirty hack, rewrite it
-    ArrayList<String> searchResults = new ArrayList<String>();
-    searchResults.ensureCapacity(resultCount);
-    int nextHandle = searchSubstring(substring, start, resultCount, searchResults);
-    int num = searchResults.size();
-    results.titles = new String[num];
-    results.x = new int[num];
-    results.y = new int[num];
-    for (int i = 0; i < num; ++i) {
-      int idx = findIndexByOffset(offset, result_pos[i]); 
-      results.x[i] = xcoord[idx];
-      results.y[i] = ycoord[idx];
-      results.titles[i] = searchResults.get(i);
-    }
-    results.nextHandle = nextHandle;
-    results.query = substring;
-    logger.debug("got " + num + " results");
+    Pair<List<Placemark>, Integer> searchResults = search(query, start, resultCount);  
     long endTime = System.currentTimeMillis();
-    logger.debug("search for " + substring + " took " + (endTime - startTime) + "ms");
+    Results results = new Results();
+    results.nextHandle = searchResults.second.intValue();
+    results.placemarks = searchResults.first;
+    results.query = query;
+    logger.debug("search for " + query + " took " + (endTime - startTime) + "ms, got " + results.placemarks.size() + " results");
     callback.run(results);
   }
 
   @Override
   public void loadPreferences(SharedPreferences prefs) {
     resultCount = SettingsHelper.getIntPref(prefs, PREF_RESULT_COUNT, DEFAULT_RESULT_COUNT);
-    if (resultCount < 1 || resultCount > 1000) {
+    if (resultCount < 1 || resultCount > MAX_RESULTS) {
       resultCount = DEFAULT_RESULT_COUNT;
     }
   }

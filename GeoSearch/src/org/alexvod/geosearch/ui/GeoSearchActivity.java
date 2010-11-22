@@ -10,6 +10,7 @@ import org.ushmax.common.LoggerFactory;
 import org.ushmax.kml.Proto.KmlFeature;
 import org.ushmax.kml.Proto.KmlFile;
 import org.ushmax.kml.Proto.PointGeometry;
+import org.ushmax.wikimapia.Placemark;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -135,13 +136,13 @@ public class GeoSearchActivity extends Activity {
       adapter.add("- NOTHING TO SEARCH FOR -");
     } else if (results == null) {
       adapter.add("- ERROR -");
-    } else if (results.titles.length == 0) {
+    } else if (results.placemarks.size() == 0) {
       adapter.add("- NO RESULTS -");
     } else {
-      for (String result : results.titles) {
-        adapter.add(result);
+      for (Placemark placemark : results.placemarks) {
+        adapter.add(placemark.name);
       }
-      int numResults = (addAtEnd ? currentResults.titles.length : 0) + results.titles.length; 
+      int numResults = (addAtEnd ? currentResults.placemarks.size() : 0) + results.placemarks.size(); 
       if (results.nextHandle != -1) {
         adapter.add("- [" + numResults + "] GET MORE RESULTS -");
       } else {
@@ -149,24 +150,7 @@ public class GeoSearchActivity extends Activity {
       }
     }
     if (addAtEnd) {
-      int currentSize = currentResults.x.length;
-      int resultsSize = results.x.length;
-      // Append new data to currentResults.
-      int[] newlats = new int[currentSize + resultsSize];
-      System.arraycopy(currentResults.x, 0, newlats, 0, currentSize);
-      System.arraycopy(results.x, 0, newlats, currentSize, resultsSize);
-      currentResults.x = newlats;
-
-      int[] newlngs = new int[currentSize + resultsSize];
-      System.arraycopy(currentResults.y, 0, newlngs, 0, currentSize);
-      System.arraycopy(results.y, 0, newlngs, currentSize, resultsSize);
-      currentResults.y = newlngs;
-
-      String[] newtitles = new String[currentSize + resultsSize];
-      System.arraycopy(currentResults.titles, 0, newtitles, 0, currentSize);
-      System.arraycopy(results.titles, 0, newtitles, currentSize, resultsSize);
-      currentResults.titles = newtitles;
-
+      currentResults.placemarks.addAll(results.placemarks);
       currentResults.nextHandle = results.nextHandle;
     } else {
       currentResults = results;
@@ -249,14 +233,13 @@ public class GeoSearchActivity extends Activity {
 
   private byte[] getPackedResults() {
     KmlFile.Builder builder = KmlFile.newBuilder();
-    int size = currentResults.titles.length;
-    for (int i = 0; i < size; ++i) {
+    for (Placemark placemark : currentResults.placemarks) {
       KmlFeature.Builder feature = KmlFeature.newBuilder();
       PointGeometry.Builder point = PointGeometry.newBuilder();
-      point.setX(currentResults.x[i]);
-      point.setY(currentResults.y[i]);
+      point.setX(placemark.lowx);
+      point.setY(placemark.lowy);
       feature.setPoint(point);
-      feature.setName(currentResults.titles[i]);
+      feature.setName(placemark.name);
       feature.setIcon("red_dot.png");
       builder.addFeature(feature);
     }
@@ -264,9 +247,10 @@ public class GeoSearchActivity extends Activity {
   }
 
   private void returnResult(int index) {
-    String title = currentResults.titles[index];
-    int x = currentResults.x[index];
-    int y = currentResults.y[index];
+    Placemark placemark = currentResults.placemarks.get(index);
+    String title = placemark.name;
+    int x = placemark.lowx;
+    int y = placemark.lowy;
     logger.debug("returning result: " + title + "@" + x + "," + y);
     Intent intent = getIntent();
     intent.putExtra("org.alexvod.geosearch.TITLE", title);
