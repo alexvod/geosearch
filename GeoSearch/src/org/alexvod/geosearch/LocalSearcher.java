@@ -46,9 +46,12 @@ public final class LocalSearcher implements Searcher {
     xcoord = new int[count];
     ycoord = new int[count];
     stream.read(buffer, 0, 4 * count);
-    NativeUtils.readIntArrayBE(buffer, 0, ycoord, count);
-    stream.read(buffer, 0, 4 * count);
     NativeUtils.readIntArrayBE(buffer, 0, xcoord, count);
+    stream.read(buffer, 0, 4 * count);
+    NativeUtils.readIntArrayBE(buffer, 0, ycoord, count);
+    
+    // Skip ids.
+    stream.skip(4 * count);
     
     // Read content.
     charset = Charset.read(stream);
@@ -57,12 +60,12 @@ public final class LocalSearcher implements Searcher {
     content = new byte[totalChars];
     stream.read(content);
     logger.debug("Title index has " + totalChars + " characters");
-
+    
     // Read offset array.
     offset = new int[count + 1];
     stream.read(buffer, 0, 4 * (count + 1));
     NativeUtils.readIntArrayBE(buffer, 0, offset, count + 1);
-
+    
     stream.close();
   }
 
