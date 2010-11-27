@@ -12,7 +12,7 @@ import org.ushmax.common.Charset;
 import org.ushmax.common.Logger;
 import org.ushmax.common.LoggerFactory;
 import org.ushmax.common.Pair;
-import org.ushmax.wikimapia.Placemark;
+import org.ushmax.geometry.GeoObject;
 
 import android.content.SharedPreferences;
 
@@ -87,11 +87,11 @@ public final class LocalSearcher implements Searcher {
     return left;
   }
   
-  public Pair<List<Placemark>, Integer> search(String query, int start, int numResults) {
-    ArrayList<Placemark> result = new ArrayList<Placemark>();
+  public Pair<List<GeoObject>, Integer> search(String query, int start, int numResults) {
+    ArrayList<GeoObject> result = new ArrayList<GeoObject>();
     if (start < 0) {
       // JAVACRAP Java type inference sucks
-      return Pair.<List<Placemark>, Integer>newInstance(result, -1);
+      return Pair.<List<GeoObject>, Integer>newInstance(result, -1);
     }
     
     int num = numResults;
@@ -116,31 +116,27 @@ public final class LocalSearcher implements Searcher {
       }
       start = idx + 1;
       
-      Placemark placemark = new Placemark();
-      //placemark.id = id[idx];
-      placemark.lowx = xcoord[idx];
-      placemark.lowy = ycoord[idx];
-      placemark.name = charset.decodeSubstring(content, offset[idx], offset[idx + 1] - 1);
-      result.add(placemark);
+      String name = charset.decodeSubstring(content, offset[idx], offset[idx + 1] - 1);
+      result.add(new GeoObject(xcoord[idx], ycoord[idx], name, 0));
       if (result.size() >= num) {
         break;
       }
     }
     
     // JAVACRAP Java type inference sucks
-    return Pair.<List<Placemark>, Integer>newInstance(result, start);
+    return Pair.<List<GeoObject>, Integer>newInstance(result, start);
   }
 
   @Override
   public void search(String query, int start, Callback<Results> callback) {
     long startTime = System.currentTimeMillis();
-    Pair<List<Placemark>, Integer> searchResults = search(query, start, resultCount);  
+    Pair<List<GeoObject>, Integer> searchResults = search(query, start, resultCount);  
     long endTime = System.currentTimeMillis();
     Results results = new Results();
     results.nextHandle = searchResults.second.intValue();
-    results.placemarks = searchResults.first;
+    results.objects = searchResults.first;
     results.query = query;
-    logger.debug("search for " + query + " took " + (endTime - startTime) + "ms, got " + results.placemarks.size() + " results");
+    logger.debug("search for " + query + " took " + (endTime - startTime) + "ms, got " + results.objects.size() + " results");
     callback.run(results);
   }
 

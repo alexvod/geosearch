@@ -7,10 +7,10 @@ import org.ushmax.android.SettingsHelper;
 import org.ushmax.common.Callback;
 import org.ushmax.common.Logger;
 import org.ushmax.common.LoggerFactory;
+import org.ushmax.geometry.GeoObject;
 import org.ushmax.kml.Proto.KmlFeature;
 import org.ushmax.kml.Proto.KmlFile;
 import org.ushmax.kml.Proto.PointGeometry;
-import org.ushmax.wikimapia.Placemark;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -136,13 +136,13 @@ public class GeoSearchActivity extends Activity {
       adapter.add("- NOTHING TO SEARCH FOR -");
     } else if (results == null) {
       adapter.add("- ERROR -");
-    } else if (results.placemarks.size() == 0) {
+    } else if (results.objects.size() == 0) {
       adapter.add("- NO RESULTS -");
     } else {
-      for (Placemark placemark : results.placemarks) {
-        adapter.add(placemark.name);
+      for (GeoObject object : results.objects) {
+        adapter.add(object.name);
       }
-      int numResults = (addAtEnd ? currentResults.placemarks.size() : 0) + results.placemarks.size(); 
+      int numResults = (addAtEnd ? currentResults.objects.size() : 0) + results.objects.size(); 
       if (results.nextHandle != -1) {
         adapter.add("- [" + numResults + "] GET MORE RESULTS -");
       } else {
@@ -150,7 +150,7 @@ public class GeoSearchActivity extends Activity {
       }
     }
     if (addAtEnd) {
-      currentResults.placemarks.addAll(results.placemarks);
+      currentResults.objects.addAll(results.objects);
       currentResults.nextHandle = results.nextHandle;
     } else {
       currentResults = results;
@@ -233,13 +233,13 @@ public class GeoSearchActivity extends Activity {
 
   private byte[] getPackedResults() {
     KmlFile.Builder builder = KmlFile.newBuilder();
-    for (Placemark placemark : currentResults.placemarks) {
+    for (GeoObject object : currentResults.objects) {
       KmlFeature.Builder feature = KmlFeature.newBuilder();
       PointGeometry.Builder point = PointGeometry.newBuilder();
-      point.setX(placemark.lowx);
-      point.setY(placemark.lowy);
+      point.setX(object.x);
+      point.setY(object.y);
       feature.setPoint(point);
-      feature.setName(placemark.name);
+      feature.setName(object.name);
       feature.setIcon("red_dot.png");
       builder.addFeature(feature);
     }
@@ -247,10 +247,10 @@ public class GeoSearchActivity extends Activity {
   }
 
   private void returnResult(int index) {
-    Placemark placemark = currentResults.placemarks.get(index);
-    String title = placemark.name;
-    int x = placemark.lowx;
-    int y = placemark.lowy;
+    GeoObject object = currentResults.objects.get(index);
+    String title = object.name;
+    int x = object.x;
+    int y = object.y;
     logger.debug("returning result: " + title + "@" + x + "," + y);
     Intent intent = getIntent();
     intent.putExtra("org.alexvod.geosearch.TITLE", title);

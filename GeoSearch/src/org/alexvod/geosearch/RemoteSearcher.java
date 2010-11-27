@@ -47,7 +47,7 @@ public class RemoteSearcher implements Searcher {
         if (results == null) {
           logger.debug("got error");
         } else {
-          logger.debug("got " + results.placemarks.size() + " results");
+          logger.debug("got " + results.objects.size() + " results");
         }
         long endTime = System.currentTimeMillis();
         logger.debug("search for " + substring + " took " + (endTime - startTime) + "ms");
