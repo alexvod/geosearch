@@ -7,6 +7,7 @@ import org.alexvod.geosearch.RemoteSearcher;
 import org.alexvod.geosearch.Searcher;
 import org.ushmax.android.AndroidHttpFetcher;
 import org.ushmax.android.AndroidLogger;
+import org.ushmax.common.BadDataException;
 import org.ushmax.common.Factory;
 import org.ushmax.common.Logger;
 import org.ushmax.common.LoggerFactory;
@@ -46,6 +47,8 @@ public class GeoSearchApplication extends Application {
         searcher = new LocalSearcher("/sdcard/maps/index.dat");
       } catch (IOException e) {
         throw new RuntimeException("Failed to load search index");
+      } catch (BadDataException e) {
+        throw new RuntimeException("Corrupted search index");
       }
     } else {
       throw new RuntimeException("Unknown search mode " + searchMode);
